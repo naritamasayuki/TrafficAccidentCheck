@@ -1,0 +1,13 @@
+# Xcode
+build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+
+# API キー
+Config/Secrets.xcconfig
+
+# 生データ（scripts/build_accident_data.py で再取得可能）
+data_raw/
+
+.DS_Store
