@@ -142,7 +142,10 @@ def convert(rows, pref_filter, out_records, stats):
     for row in rows:
         if len(row) < len(header):
             continue
-        g = lambda k: row[idx[k]]
+
+        def g(k: str) -> str:
+            return row[idx[k]]
+
         pref = to_int(g("pref"))
         if pref_filter and pref not in pref_filter:
             continue
