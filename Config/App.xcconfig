@@ -1,0 +1,7 @@
+// アプリ共通のビルド設定
+// Google Maps の API キーは Secrets.xcconfig に記述してください（Git 管理対象外）。
+//   cp Config/Secrets.example.xcconfig Config/Secrets.xcconfig
+
+GOOGLE_MAPS_API_KEY =
+
+#include? "Secrets.xcconfig"

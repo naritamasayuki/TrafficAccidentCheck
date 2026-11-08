@@ -1,0 +1,70 @@
+name: CI (テスト・静的解析・iOSビルド)
+
+on:
+  push:
+    branches: [ main, "feature/**" ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  python-lint-and-test:
+    name: Python スクリプトの静的解析と単体テスト
+    runs-on: ubuntu-latest
+    steps:
+      - name: リポジトリのチェックアウト
+        uses: actions/checkout@v4
+
+      - name: Python セットアップ
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Flake8 リンターの導入と実行
+        run: |
+          pip install flake8
+          flake8 scripts/ tests/ --max-line-length=130
+
+      - name: Python ユニットテストの実行
+        run: |
+          python3 -m unittest discover -s tests -v
+
+  ios-build-and-test:
+    name: iOS ビルド・SwiftLint・単体テスト
+    runs-on: macos-15
+    steps:
+      - name: リポジトリのチェックアウト
+        uses: actions/checkout@v4
+
+      - name: SwiftLint による静的解析
+        run: |
+          if which swiftlint >/dev/null; then
+            swiftlint --strict
+          fi
+
+      - name: SNSシードデータの生成確認
+        run: |
+          python3 scripts/fetch_sns_accidents.py --offline
+
+      - name: Swift コアロジック単体テストの実行
+        run: |
+          swiftc -parse-as-library \
+            TrafficAccidentCheck/Utilities/AppLogger.swift \
+            TrafficAccidentCheck/Models/AccidentRecord.swift \
+            TrafficAccidentCheck/Models/SNSAccidentReport.swift \
+            TrafficAccidentCheck/Models/AccidentFilter.swift \
+            TrafficAccidentCheck/Services/AccidentDataStore.swift \
+            TrafficAccidentCheck/Services/SNSAccidentService.swift \
+            TrafficAccidentCheck/Services/DangerAnalyzer.swift \
+            scripts/run_swift_core_tests.swift \
+            -o /tmp/core_tests
+          /tmp/core_tests
+
+      - name: Xcode ビルドの検証
+        env:
+          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+        run: |
+          xcodebuild -project TrafficAccidentCheck.xcodeproj \
+            -scheme TrafficAccidentCheck \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO \
+            build-for-testing

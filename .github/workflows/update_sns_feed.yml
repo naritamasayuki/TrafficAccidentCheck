@@ -1,0 +1,37 @@
+name: SNS・速報フィードの定期自動更新 (無料枠)
+
+on:
+  schedule:
+    # 6時間ごとに無料の公開フィード（Mastodon / Google News RSS / 国土地理院API）から最新データを収集
+    - cron: "15 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-sns-feed:
+    name: 最新SNS・速報データの取得と更新
+    runs-on: ubuntu-latest
+    steps:
+      - name: リポジトリのチェックアウト
+        uses: actions/checkout@v4
+
+      - name: Python セットアップ
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: SNS・速報データの取得とジオコーディング
+        run: |
+          python3 scripts/fetch_sns_accidents.py --out TrafficAccidentCheck/Resources/sns_reports.json
+
+      - name: 変更がある場合はコミット＆プッシュ
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if ! git diff --quiet TrafficAccidentCheck/Resources/sns_reports.json; then
+            git add TrafficAccidentCheck/Resources/sns_reports.json
+            git commit -m "chore: SNS・速報の最新交通事故データを自動更新"
+            git push
+          fi
