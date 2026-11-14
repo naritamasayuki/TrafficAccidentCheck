@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: リポジトリのチェックアウト
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Python セットアップ
         uses: actions/setup-python@v5
@@ -33,7 +33,7 @@ jobs:
     runs-on: macos-15
     steps:
       - name: リポジトリのチェックアウト
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: SwiftLint による静的解析
         run: |
