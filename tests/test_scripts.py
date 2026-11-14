@@ -11,6 +11,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
 
 import build_accident_data  # noqa: E402
 import fetch_sns_accidents  # noqa: E402
+import apply_admob_ids  # noqa: E402
 
 
 class TestBuildAccidentData(unittest.TestCase):
@@ -70,6 +71,15 @@ class TestFetchSNSAccidents(unittest.TestCase):
             self.assertIn("SNS", item["sourceName"])
             self.assertTrue(20.0 <= item["latitude"] <= 46.0)
             self.assertTrue(122.0 <= item["longitude"] <= 154.0)
+
+    def test_admob_id_regex_patterns(self):
+        sample = "App: ca-app-pub-1234567890123456~0987654321 Unit: ca-app-pub-1234567890123456/1122334455"
+        app_match = apply_admob_ids.APP_ID_RE.search(sample)
+        unit_match = apply_admob_ids.UNIT_ID_RE.search(sample)
+        self.assertIsNotNone(app_match)
+        self.assertIsNotNone(unit_match)
+        self.assertEqual(app_match.group(0), "ca-app-pub-1234567890123456~0987654321")
+        self.assertEqual(unit_match.group(0), "ca-app-pub-1234567890123456/1122334455")
 
 
 if __name__ == "__main__":
