@@ -10,4 +10,9 @@ Config/Secrets.xcconfig
 # 生データ（scripts/build_accident_data.py で再取得可能）
 data_raw/
 
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
 .DS_Store

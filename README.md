@@ -29,21 +29,25 @@
 
 ## セットアップ手順
 
-### 1. Google Maps API キーの設定（任意）
+### 1. Google Maps API キー ＆ Google AdMob ID の設定（任意）
 
-APIキーはソースコードに直接記述せず、Git管理外の `Config/Secrets.xcconfig` で管理します。
+APIキーや広告IDはソースコードに直接記述せず、Git管理外の `Config/Secrets.xcconfig` で管理します。
 
 ```bash
 cp Config/Secrets.example.xcconfig Config/Secrets.xcconfig
 ```
 
-`Config/Secrets.xcconfig` を開き、Google Cloud Console で「Maps SDK for iOS」を有効化した API キーを設定してください。
+`Config/Secrets.xcconfig` を開き、以下のキー・IDを設定してください。
 
 ```xcconfig
 GOOGLE_MAPS_API_KEY = AIzaSy...
+ADMOB_APP_ID = ca-app-pub-XXXXXXXXXXXXXXXX~YYYYYYYYYY
+ADMOB_BANNER_UNIT_ID = ca-app-pub-XXXXXXXXXXXXXXXX/ZZZZZZZZZZ
 ```
 
-> **補足**: API キーを設定しない場合でも、アプリは自動的に MapKit 互換モードで起動し、全機能を確認できます。
+> **補足**:
+> - Google Maps API キーを設定しない場合でも、アプリは自動的に MapKit 互換モードで起動し、全機能を確認できます。
+> - AdMob ID を設定しない場合（または `DEBUG` ビルド時）は、自己クリックによる規約違反やクラッシュを防ぐため、自動的に **Google 公式のテスト広告 ID** が適用されます。
 
 ### 2. データ更新スクリプト（無料データソース）
 

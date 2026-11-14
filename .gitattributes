@@ -1,0 +1,12 @@
+# Windows環境とmacOS環境の間で改行コード(LF)を統一し、SwiftLintやXcodeプロジェクトの差分汚染を防止する
+* text=auto eol=lf
+*.swift text eol=lf
+*.py text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.xcconfig text eol=lf
+*.plist text eol=lf
+*.pbxproj text eol=lf
+*.bin binary

@@ -1,0 +1,44 @@
+name: "CodeQL セキュリティスキャン"
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '30 2 * * 1'
+
+jobs:
+  analyze:
+    name: CodeQL 解析 (Python / Swift)
+    runs-on: macos-15
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'python', 'swift' ]
+
+    steps:
+      - name: リポジトリのチェックアウト
+        uses: actions/checkout@v4
+
+      - name: CodeQL の初期化
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+
+      - name: Автоビルド (Swift用)
+        if: matrix.language == 'swift'
+        run: |
+          xcodebuild -project TrafficAccidentCheck.xcodeproj \
+            -scheme TrafficAccidentCheck \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: CodeQL 解析の実行
+        uses: github/codeql-action/analyze@v3
