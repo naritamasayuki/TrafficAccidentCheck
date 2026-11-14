@@ -38,35 +38,39 @@ struct ContentView: View {
     private let snsService = SNSAccidentService()
 
     var body: some View {
-        ZStack(alignment: .top) {
-            // メイン地図レイヤー（Google Maps SDK / 未設定時は MapKit 自動フォールバック）
-            mapLayer
-                .ignoresSafeArea(edges: .bottom)
+        VStack(spacing: 0) {
+            ZStack(alignment: .top) {
+                // メイン地図レイヤー（Google Maps SDK / 未設定時は MapKit 自動フォールバック）
+                mapLayer
 
-            // 上部オーバーレイ（危険度カード・クイックフィルタ・接近警告バナー）
-            VStack(spacing: 8) {
-                topDangerBar
-                quickControlBar
+                // 上部オーバーレイ（危険度カード・クイックフィルタ・接近警告バナー）
+                VStack(spacing: 8) {
+                    topDangerBar
+                    quickControlBar
 
-                if !isGoogleMapsConfigured {
-                    apiKeyNoticeBanner
+                    if !isGoogleMapsConfigured {
+                        apiKeyNoticeBanner
+                    }
+
+                    if let errorMsg = dataLoadErrorMessage {
+                        errorBanner(message: errorMsg)
+                    }
+
+                    if let alertSpot = locationManager.activeHotspotAlert {
+                        hotspotProximityBanner(spot: alertSpot)
+                    }
+
+                    Spacer()
+
+                    bottomStatusLegendBar
                 }
-
-                if let errorMsg = dataLoadErrorMessage {
-                    errorBanner(message: errorMsg)
-                }
-
-                if let alertSpot = locationManager.activeHotspotAlert {
-                    hotspotProximityBanner(spot: alertSpot)
-                }
-
-                Spacer()
-
-                bottomStatusLegendBar
+                .padding(.horizontal, 12)
+                .padding(.top, 6)
+                .padding(.bottom, 8)
             }
-            .padding(.horizontal, 12)
-            .padding(.top, 6)
-            .padding(.bottom, 10)
+
+            // 画面最下部の Google AdMob バナー広告エリア
+            AdBannerContainerView()
         }
         .sheet(item: $selectedAccident) { record in
             AccidentDetailSheet(record: record)

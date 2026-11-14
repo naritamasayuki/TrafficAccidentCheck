@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		A10000000000000000000021 /* GoogleMaps in Frameworks */ = {isa = PBXBuildFile; productRef = A10000000000000000000031 /* GoogleMaps */; };
 		A10000000000000000000022 /* GoogleMapsUtils in Frameworks */ = {isa = PBXBuildFile; productRef = A10000000000000000000032 /* GoogleMapsUtils */; };
+		A10000000000000000000023 /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = A10000000000000000000033 /* GoogleMobileAds */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -49,6 +50,7 @@
 			files = (
 				A10000000000000000000021 /* GoogleMaps in Frameworks */,
 				A10000000000000000000022 /* GoogleMapsUtils in Frameworks */,
+				A10000000000000000000023 /* GoogleMobileAds in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -113,6 +115,7 @@
 			packageProductDependencies = (
 				A10000000000000000000031 /* GoogleMaps */,
 				A10000000000000000000032 /* GoogleMapsUtils */,
+				A10000000000000000000033 /* GoogleMobileAds */,
 			);
 			productName = TrafficAccidentCheck;
 			productReference = A10000000000000000000001 /* TrafficAccidentCheck.app */;
@@ -173,6 +176,7 @@
 			packageReferences = (
 				A10000000000000000000041 /* XCRemoteSwiftPackageReference "ios-maps-sdk" */,
 				A10000000000000000000042 /* XCRemoteSwiftPackageReference "google-maps-ios-utils" */,
+				A10000000000000000000043 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = A10000000000000000000005 /* Products */;
@@ -438,6 +442,14 @@
 				minimumVersion = 7.1.2;
 			};
 		};
+		A10000000000000000000043 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/googleads/swift-package-manager-google-mobile-ads.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 11.0.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -450,6 +462,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = A10000000000000000000042 /* XCRemoteSwiftPackageReference "google-maps-ios-utils" */;
 			productName = GoogleMapsUtils;
+		};
+		A10000000000000000000033 /* GoogleMobileAds */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A10000000000000000000043 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */;
+			productName = GoogleMobileAds;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

@@ -187,4 +187,44 @@ final class TrafficAccidentCheckTests: XCTestCase {
         XCTAssertTrue(report.sourceAttributionBadgeText.contains("出典:"))
         XCTAssertTrue(report.sourceAttributionBadgeText.contains("未確認情報"))
     }
+
+    // MARK: - 4. AdMobConfiguration 設定検証・フォールバックテスト
+
+    func testAdMobConfigurationValidationAndFallback() {
+        XCTAssertTrue(AdMobConfiguration.isValidAppID(AdMobConfiguration.officialTestAppID))
+        XCTAssertTrue(AdMobConfiguration.isValidBannerUnitID(AdMobConfiguration.officialTestBannerUnitID))
+        XCTAssertFalse(AdMobConfiguration.isValidAppID("YOUR_APP_ID"))
+        XCTAssertFalse(AdMobConfiguration.isValidBannerUnitID("$(ADMOB_BANNER_UNIT_ID)"))
+
+        // プレースホルダや不正値が渡された場合は公式テストIDへフォールバックすること
+        let fallbackConfig = AdMobConfiguration(
+            rawAppID: "YOUR_APP_ID",
+            rawBannerUnitID: "INVALID_UNIT_ID",
+            forceTestMode: false
+        )
+        XCTAssertEqual(fallbackConfig.appID, AdMobConfiguration.officialTestAppID)
+        XCTAssertEqual(fallbackConfig.bannerUnitID, AdMobConfiguration.officialTestBannerUnitID)
+        XCTAssertTrue(fallbackConfig.isUsingTestAds)
+
+        // 本番IDが設定され、かつ forceTestMode == false (Release) の場合は本番IDが採用されること
+        let prodAppID = "ca-app-pub-1234567890123456~1234567890"
+        let prodUnitID = "ca-app-pub-1234567890123456/0987654321"
+        let releaseConfig = AdMobConfiguration(
+            rawAppID: prodAppID,
+            rawBannerUnitID: prodUnitID,
+            forceTestMode: false
+        )
+        XCTAssertEqual(releaseConfig.appID, prodAppID)
+        XCTAssertEqual(releaseConfig.bannerUnitID, prodUnitID)
+        XCTAssertFalse(releaseConfig.isUsingTestAds)
+
+        // Debug時 (forceTestMode == true) は本番IDが設定されていても自己クリック防止のためテストユニットIDになること
+        let debugConfig = AdMobConfiguration(
+            rawAppID: prodAppID,
+            rawBannerUnitID: prodUnitID,
+            forceTestMode: true
+        )
+        XCTAssertEqual(debugConfig.bannerUnitID, AdMobConfiguration.officialTestBannerUnitID)
+        XCTAssertTrue(debugConfig.isUsingTestAds)
+    }
 }

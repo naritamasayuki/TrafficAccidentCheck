@@ -52,6 +52,7 @@ jobs:
             TrafficAccidentCheck/Models/AccidentRecord.swift \
             TrafficAccidentCheck/Models/SNSAccidentReport.swift \
             TrafficAccidentCheck/Models/AccidentFilter.swift \
+            TrafficAccidentCheck/Models/AdMobConfiguration.swift \
             TrafficAccidentCheck/Services/AccidentDataStore.swift \
             TrafficAccidentCheck/Services/SNSAccidentService.swift \
             TrafficAccidentCheck/Services/DangerAnalyzer.swift \

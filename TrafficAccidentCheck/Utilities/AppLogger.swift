@@ -14,6 +14,8 @@ enum AppLogger {
     static let map = Logger(subsystem: subsystem, category: "Map")
     /// 位置情報・接近通知用ロガー
     static let location = Logger(subsystem: subsystem, category: "LocationAlert")
+    /// 広告（Google AdMob / ATT）用ロガー
+    static let ad = Logger(subsystem: subsystem, category: "AdMob")
 
     /// 例外エラーを詳細メッセージおよびコールスタック情報とともに記録する。
     static func logError(

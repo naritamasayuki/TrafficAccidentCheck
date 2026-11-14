@@ -56,6 +56,22 @@ struct CoreTestRunner {
         assert(place == "神奈川県横浜市港北区", "地名抽出結果が期待値と異なります: \(String(describing: place))")
         print("[OK] 正常系: SNS速報 JSON デコード (\(payload.reports.count) 件) ＆ 地名抽出テスト成功")
 
+        // 5. AdMobConfiguration のバリデーション＆テストIDフォールバック検証
+        assert(AdMobConfiguration.isValidAppID(AdMobConfiguration.officialTestAppID))
+        assert(AdMobConfiguration.isValidBannerUnitID(AdMobConfiguration.officialTestBannerUnitID))
+        assert(!AdMobConfiguration.isValidAppID("YOUR_APP_ID"))
+        let fallbackAdConfig = AdMobConfiguration(rawAppID: "", rawBannerUnitID: "invalid", forceTestMode: false)
+        assert(fallbackAdConfig.appID == AdMobConfiguration.officialTestAppID)
+        assert(fallbackAdConfig.bannerUnitID == AdMobConfiguration.officialTestBannerUnitID)
+        assert(fallbackAdConfig.isUsingTestAds)
+        let releaseAdConfig = AdMobConfiguration(
+            rawAppID: "ca-app-pub-1234567890123456~1234567890",
+            rawBannerUnitID: "ca-app-pub-1234567890123456/0987654321",
+            forceTestMode: false
+        )
+        assert(!releaseAdConfig.isUsingTestAds)
+        print("[OK] 正常系・異常系: AdMobConfiguration 検証＆フォールバックテスト成功")
+
         print("=== 全テスト PASS ===")
     }
 }

@@ -5,6 +5,7 @@ import SwiftUI
 /// APIキーはソースコードに直接記述せず、`Config/Secrets.xcconfig`（または環境変数 `GOOGLE_MAPS_API_KEY`）経由で注入する。
 @main
 struct TrafficAccidentCheckApp: App {
+    @Environment(\.scenePhase) private var scenePhase
     private let isGoogleMapsConfigured: Bool
 
     init() {
@@ -27,6 +28,12 @@ struct TrafficAccidentCheckApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView(isGoogleMapsConfigured: isGoogleMapsConfigured)
+                .onChange(of: scenePhase) { _, newPhase in
+                    if newPhase == .active {
+                        AdMobService.shared.initializeIfNeeded()
+                        AdMobService.shared.requestTrackingAuthorizationIfNeeded()
+                    }
+                }
         }
     }
 }
