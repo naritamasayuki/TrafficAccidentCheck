@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-14T18:04:17Z",
+  "generatedAt": "2026-11-14T22:26:16Z",
   "disclaimer": "SNSおよび速報から自動抽出した未確認情報です。公式統計（警察庁オープンデータ）とは区別して表示されます。",
   "reports": [
     {
@@ -129,20 +129,6 @@
       "category": "車両相互・その他（未確認）"
     },
     {
-      "id": "sns-799e754f9b6b",
-      "title": "海老名市でトラックと歩行者2人が交通事故 歩行者2人は死亡 トラックは現場から逃走中 - テレ朝NEWS",
-      "body": "海老名市でトラックと歩行者2人が交通事故 歩行者2人は死亡 トラックは現場から逃走中 - テレ朝NEWS",
-      "latitude": 35.446388,
-      "longitude": 139.390839,
-      "extractedLocation": "海老名市",
-      "postedAt": "Fri, 13 Nov 2026 07:35:51 GMT",
-      "sourceName": "SNS・速報 (テレ朝NEWS)",
-      "sourceType": "sns_news",
-      "sourceURL": "https://news.google.com/rss/articles/CBMickFVX3lxTE1vV3YtUzl1Q2F6S1ZBY0JHSDQ5WVBxamd6ckM1Vk9oLWw0clVrVjdoZUo3MUZZRU5USmpBTGRDOGZLaWhrQmp5RlhjaHJJQ094ajNaTlRsbVRHRWs0ak5hMU9mazVBa09QNUk2NlBuUHV3QQ?oc=5",
-      "isUnverified": true,
-      "category": "人対車両（未確認）"
-    },
-    {
       "id": "sns-d5a70e3baf4d",
       "title": "右折中の神戸市バスと直進のオートバイ、交差点で衝突事故 男性1人が重傷|交通事故 - 神戸新聞",
       "body": "右折中の神戸市バスと直進のオートバイ、交差点で衝突事故 男性1人が重傷|交通事故 - 神戸新聞",
@@ -183,6 +169,20 @@
       "sourceURL": "https://news.google.com/rss/articles/CBMif0FVX3lxTE1aazlhZi0wczNmZHlXb2FROU5zWUFMYm5YOVVKZGdhTUxpSEotNGFFb05ZTUEtbU9XR3BlTDBvdE9YVmZvakhWbTlENHZlcU9TTWNZSHB2OGI5VmYyTTJVMndUSHZ0cXFlZGFHd3RxcVdObEx6bTczTTgxOFdMNmM?oc=5",
       "isUnverified": true,
       "category": "車両相互・その他（未確認）"
+    },
+    {
+      "id": "sns-799e754f9b6b",
+      "title": "海老名市でトラックと歩行者2人が交通事故 歩行者2人は死亡 トラックは現場から逃走中 - テレ朝NEWS",
+      "body": "海老名市でトラックと歩行者2人が交通事故 歩行者2人は死亡 トラックは現場から逃走中 - テレ朝NEWS",
+      "latitude": 35.446388,
+      "longitude": 139.390839,
+      "extractedLocation": "海老名市",
+      "postedAt": "Fri, 13 Nov 2026 07:35:51 GMT",
+      "sourceName": "SNS・速報 (テレ朝NEWS)",
+      "sourceType": "sns_news",
+      "sourceURL": "https://news.google.com/rss/articles/CBMickFVX3lxTE1vV3YtUzl1Q2F6S1ZBY0JHSDQ5WVBxamd6ckM1Vk9oLWw0clVrVjdoZUo3MUZZRU5USmpBTGRDOGZLaWhrQmp5RlhjaHJJQ094ajNaTlRsbVRHRWs0ak5hMU9mazVBa09QNUk2NlBuUHV3QQ?oc=5",
+      "isUnverified": true,
+      "category": "人対車両（未確認）"
     },
     {
       "id": "sns-bd8a1ddaaa94",
@@ -275,7 +275,7 @@
       "latitude": 35.6895,
       "longitude": 139.6917,
       "extractedLocation": "東京都新宿区西新宿",
-      "postedAt": "2026-11-14T18:04:17Z",
+      "postedAt": "2026-11-14T22:26:16Z",
       "sourceName": "SNS (Bluesky / 未確認速報)",
       "sourceType": "sns_bluesky",
       "sourceURL": "https://bsky.app",
@@ -289,7 +289,7 @@
       "latitude": 34.7024,
       "longitude": 135.4959,
       "extractedLocation": "大阪府大阪市北区梅田",
-      "postedAt": "2026-11-14T18:04:17Z",
+      "postedAt": "2026-11-14T22:26:16Z",
       "sourceName": "SNS (Bluesky / 未確認速報)",
       "sourceType": "sns_bluesky",
       "sourceURL": "https://bsky.app",
@@ -303,7 +303,7 @@
       "latitude": 35.1681,
       "longitude": 136.9066,
       "extractedLocation": "愛知県名古屋市中区栄",
-      "postedAt": "2026-11-14T18:04:17Z",
+      "postedAt": "2026-11-14T22:26:16Z",
       "sourceName": "SNS (Bluesky / 未確認速報)",
       "sourceType": "sns_bluesky",
       "sourceURL": "https://bsky.app",
@@ -317,7 +317,7 @@
       "latitude": 33.5902,
       "longitude": 130.4207,
       "extractedLocation": "福岡県福岡市博多区",
-      "postedAt": "2026-11-14T18:04:17Z",
+      "postedAt": "2026-11-14T22:26:16Z",
       "sourceName": "SNS (Bluesky / 未確認速報)",
       "sourceType": "sns_bluesky",
       "sourceURL": "https://bsky.app",
@@ -331,7 +331,7 @@
       "latitude": 43.0618,
       "longitude": 141.3545,
       "extractedLocation": "北海道札幌市中央区",
-      "postedAt": "2026-11-14T18:04:17Z",
+      "postedAt": "2026-11-14T22:26:16Z",
       "sourceName": "SNS (Bluesky / 未確認速報)",
       "sourceType": "sns_bluesky",
       "sourceURL": "https://bsky.app",
