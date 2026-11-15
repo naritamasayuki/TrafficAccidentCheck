@@ -284,5 +284,25 @@ final class TrafficAccidentCheckTests: XCTestCase {
             SNSAccidentService.stableHashHex(for: "東京都新宿区で追突事故"),
             SNSAccidentService.stableHashHex(for: "東京都新宿区で追突事故")
         )
+
+        var draft = BugReportDraft()
+        draft.category = .locationAndVoice
+        draft.detailText = "音声アナウンスのテスト報告"
+        let body = draft.buildFormattedBody(
+            appVersion: "1.0 (1)",
+            osVersion: "iOS 18.0",
+            filter: customFilter,
+            isGoogleMapsConfigured: false
+        )
+        XCTAssertTrue(body.contains("現在地追従・音声アナウンス"))
+        XCTAssertTrue(body.contains("音声アナウンスのテスト報告"))
+        XCTAssertNotNil(
+            draft.buildGitHubIssueURL(
+                appVersion: "1.0 (1)",
+                osVersion: "iOS 18.0",
+                filter: customFilter,
+                isGoogleMapsConfigured: false
+            )
+        )
     }
 }

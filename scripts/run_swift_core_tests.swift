@@ -76,7 +76,17 @@ struct CoreTestRunner {
         let hashA = SNSAccidentService.stableHashHex(for: "テスト事故投稿")
         let hashB = SNSAccidentService.stableHashHex(for: "テスト事故投稿")
         assert(hashA == hashB && hashA.count == 12, "安定ハッシュが一致しません")
-        print("[OK] 正常系: SNS安定ハッシュ＆重複排除検証成功")
+        var bugDraft = BugReportDraft()
+        bugDraft.category = .locationAndVoice
+        bugDraft.detailText = "テスト報告"
+        let issueURL = bugDraft.buildGitHubIssueURL(
+            appVersion: "1.0",
+            osVersion: "iOS 18.0",
+            filter: filter,
+            isGoogleMapsConfigured: false
+        )
+        assert(issueURL != nil, "バグ報告URLの生成に失敗しました")
+        print("[OK] 正常系: SNS安定ハッシュ＆バグ報告URL生成検証成功")
 
         print("=== 全テスト PASS ===")
     }

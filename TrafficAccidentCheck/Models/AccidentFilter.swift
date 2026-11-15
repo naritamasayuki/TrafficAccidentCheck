@@ -145,3 +145,97 @@ struct AccidentFilter: Equatable, Codable, Sendable {
         return true
     }
 }
+
+/// バグ・不具合・改善要望の報告カテゴリ区分。
+enum BugReportCategory: String, CaseIterable, Identifiable, Codable, Sendable {
+    case mapDisplay = "地図・ピンの表示不具合"
+    case locationAndVoice = "現在地追従・音声アナウンス"
+    case snsData = "SNS・未確認速報の誤報・不具合"
+    case crashOrPerformance = "アプリの動作・強制終了"
+    case featureRequest = "機能改善のご要望"
+    case other = "その他"
+
+    var id: String { rawValue }
+}
+
+/// バグ報告フォームの入力下書きおよびURL生成モデル（自動保存対応）。
+struct BugReportDraft: Equatable, Codable, Sendable {
+    static let storageKey = "TrafficAccidentCheck.BugReportDraft.v1"
+    static let githubIssuesBaseURL = "https://github.com/naritamasayuki/TrafficAccidentCheck/issues/new"
+
+    var category: BugReportCategory = .mapDisplay
+    var detailText: String = ""
+    var includeDiagnostics: Bool = true
+
+    static func loadSaved(defaults: UserDefaults = .standard) -> BugReportDraft {
+        guard let data = defaults.data(forKey: storageKey),
+              let decoded = try? JSONDecoder().decode(BugReportDraft.self, from: data) else {
+            return BugReportDraft()
+        }
+        return decoded
+    }
+
+    func save(to defaults: UserDefaults = .standard) {
+        if let encoded = try? JSONEncoder().encode(self) {
+            defaults.set(encoded, forKey: Self.storageKey)
+        }
+    }
+
+    /// 診断情報付きの報告本文テキストを生成する。
+    func buildFormattedBody(
+        appVersion: String,
+        osVersion: String,
+        filter: AccidentFilter,
+        isGoogleMapsConfigured: Bool
+    ) -> String {
+        let userText = detailText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let descriptionSection = userText.isEmpty ? "（詳細未入力）" : userText
+
+        var lines: [String] = [
+            "【報告カテゴリ】\(category.rawValue)",
+            "",
+            "【発生状況・詳細】",
+            descriptionSection
+        ]
+
+        if includeDiagnostics {
+            let yearStr = filter.targetYear.map { "\($0)年" } ?? "すべて"
+            let mapEngine = isGoogleMapsConfigured ? "Google Maps SDK" : "MapKit互換モード"
+            lines.append(contentsOf: [
+                "",
+                "--- 自動診断情報 ---",
+                "・アプリバージョン: \(appVersion)",
+                "・OS環境: \(osVersion)",
+                "・マップ描画モード: \(mapEngine) / \(filter.displayMode.rawValue)",
+                "・フィルタ設定: 年度=\(yearStr), 重大度=\(filter.severity.rawValue), 時間帯=\(filter.timeOfDay.rawValue)",
+                "・SNS速報表示: \(filter.showSNSReports ? "ON" : "OFF")"
+            ])
+        }
+        return lines.joined(separator: "\n")
+    }
+
+    /// GitHub Issue 作成画面の URL を生成する（タイトルと本文をクエリパラメータで自動入力）。
+    func buildGitHubIssueURL(
+        appVersion: String,
+        osVersion: String,
+        filter: AccidentFilter,
+        isGoogleMapsConfigured: Bool
+    ) -> URL? {
+        let shortSummary = String(detailText.trimmingCharacters(in: .whitespacesAndNewlines).prefix(30))
+        let titleSuffix = shortSummary.isEmpty ? "アプリ内からの報告" : shortSummary
+        let title = "[\(category.rawValue)] \(titleSuffix)"
+        let body = buildFormattedBody(
+            appVersion: appVersion,
+            osVersion: osVersion,
+            filter: filter,
+            isGoogleMapsConfigured: isGoogleMapsConfigured
+        )
+
+        var components = URLComponents(string: Self.githubIssuesBaseURL)
+        components?.queryItems = [
+            URLQueryItem(name: "title", value: title),
+            URLQueryItem(name: "body", value: body)
+        ]
+        return components?.url
+    }
+}

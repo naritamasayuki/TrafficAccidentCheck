@@ -34,6 +34,7 @@ struct ContentView: View {
     @State private var selectedAccident: AccidentRecord?
     @State private var selectedSNSReport: SNSAccidentReport?
     @State private var isShowingFilterSheet = false
+    @State private var isShowingBugReportSheet = false
     @State private var isShowingDangerDetail = false
 
     private let snsService = SNSAccidentService()
@@ -103,8 +104,14 @@ struct ContentView: View {
                         dominantType: "車両相互（衝突・追突等）"
                     )
                     locationManager.simulateApproach(to: targetSpot)
+                },
+                onOpenBugReport: {
+                    isShowingBugReportSheet = true
                 }
             )
+        }
+        .sheet(isPresented: $isShowingBugReportSheet) {
+            BugReportSheetView(filter: filter, isGoogleMapsConfigured: isGoogleMapsConfigured)
         }
         .onChange(of: filter) { _, newFilter in
             newFilter.save()
@@ -287,29 +294,20 @@ extension ContentView {
                     title: "SNS速報(未確認): \(snsReports.count)件",
                     icon: filter.showSNSReports ? "checkmark.circle.fill" : "circle",
                     activeColor: filter.showSNSReports ? .purple : nil
+                ) { filter.showSNSReports.toggle() }
+
+                pillButton(
+                    title: isRefreshingSNS ? "更新中..." : "SNS更新",
+                    icon: "arrow.clockwise",
+                    activeColor: nil
                 ) {
-                    filter.showSNSReports.toggle()
+                    guard !isRefreshingSNS else { return }
+                    Task { await refreshSNSFeed() }
                 }
 
-                Button {
-                    Task { await refreshSNSFeed() }
-                } label: {
-                    HStack(spacing: 4) {
-                        if isRefreshingSNS {
-                            ProgressView().controlSize(.mini)
-                        } else {
-                            Image(systemName: "arrow.clockwise")
-                        }
-                        Text("SNS更新")
-                    }
-                    .font(.caption.bold())
-                    .padding(.horizontal, 11)
-                    .padding(.vertical, 7)
-                    .background(Color(.secondarySystemBackground))
-                    .foregroundStyle(.primary)
-                    .clipShape(Capsule())
+                pillButton(title: "バグ報告", icon: "ladybug.fill", activeColor: nil) {
+                    isShowingBugReportSheet = true
                 }
-                .disabled(isRefreshingSNS)
             }
         }
     }
