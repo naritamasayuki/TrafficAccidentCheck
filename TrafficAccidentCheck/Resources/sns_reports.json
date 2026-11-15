@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-14T22:26:16Z",
+  "generatedAt": "2026-11-15T06:36:03Z",
   "disclaimer": "SNSおよび速報から自動抽出した未確認情報です。公式統計（警察庁オープンデータ）とは区別して表示されます。",
   "reports": [
     {
@@ -73,6 +73,20 @@
       "category": "車両相互・その他（未確認）"
     },
     {
+      "id": "sns-eeb5e4463a63",
+      "title": "［道路情報］刈羽村の国道8号、事故で通行止め（11月15日） - 新潟日報",
+      "body": "［道路情報］刈羽村の国道8号、事故で通行止め（11月15日） - 新潟日報",
+      "latitude": 37.421906,
+      "longitude": 138.622498,
+      "extractedLocation": "刈羽村",
+      "postedAt": "Sun, 15 Nov 2026 01:42:00 GMT",
+      "sourceName": "SNS・速報 (新潟日報)",
+      "sourceType": "sns_news",
+      "sourceURL": "https://news.google.com/rss/articles/CBMiXkFVX3lxTE5pVUdvR2twUWlmSi1OVENHZTZvelVQbng0dGdodmFHUDVxN29aejNSOVhvdmxYMnRGX1FJRW1rVkJaQ3hZWUkwV25XdGQ5X1VhQjBSdW42eG5peTZTTWc?oc=5",
+      "isUnverified": true,
+      "category": "車両相互・その他（未確認）"
+    },
+    {
       "id": "sns-6dcf110fdda1",
       "title": "北海道内の交通事故死者が今年100人に 凍結路面の交差点で乗用車とダンプカーが衝突 北海道鷹栖町 - TBS NEWS ",
       "body": "北海道内の交通事故死者が今年100人に 凍結路面の交差点で乗用車とダンプカーが衝突 北海道鷹栖町 - TBS NEWS DIG",
@@ -83,20 +97,6 @@
       "sourceName": "SNS・速報 (TBS NEWS DIG)",
       "sourceType": "sns_news",
       "sourceURL": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTFBhWTBOVW5mdmJHcDZoNHAxOXQ2ZDJnX2RJQ2c2TkJxb1BjMEhFMFZQcHJMQUgzaGlNQV8yWVNzWG84ak1yU3ljZmNZdmlJZ0V2ZWlCdXYtMGhUOEJ4dWZXZnRMcUdkbDg?oc=5",
-      "isUnverified": true,
-      "category": "車両相互・その他（未確認）"
-    },
-    {
-      "id": "sns-729c5ec3079f",
-      "title": "根岸交差点で車２台が衝突する「右直事故」 男女３人が負傷 宮沢橋開通後から事故が３倍以上に〈仙台市〉（仙台放送） - Y",
-      "body": "根岸交差点で車２台が衝突する「右直事故」 男女３人が負傷 宮沢橋開通後から事故が３倍以上に〈仙台市〉（仙台放送） - Yahoo!ニュース",
-      "latitude": 38.268162,
-      "longitude": 140.869507,
-      "extractedLocation": "仙台市",
-      "postedAt": "Tue, 10 Nov 2026 04:20:01 GMT",
-      "sourceName": "SNS・速報 (Yahoo!ニュース)",
-      "sourceType": "sns_news",
-      "sourceURL": "https://news.google.com/rss/articles/CBMif0FVX3lxTE5aeXB5cV91MVNLeEcyV0Z1TkZ2Q2Z5VkhNMVpVbmY4Y3d0SzNnQXAzRXlDdFVOYU9TRTAxTHJPZXVGNUlDSmhzdzY3dWd3cEpZR2VFN0p5WXJacHZFQXQ1VkdsdkZCeXlZVlMxXzY2dGtVYU9jN243QzM4dUZ0elU?oc=5",
       "isUnverified": true,
       "category": "車両相互・その他（未確認）"
     },
@@ -115,20 +115,6 @@
       "category": "車両相互・その他（未確認）"
     },
     {
-      "id": "sns-5595238565fd",
-      "title": "堺市の交通事故は12月が最多 事故が多い交差点は石津西町と新金岡団地東 - サカイタイムズ",
-      "body": "堺市の交通事故は12月が最多 事故が多い交差点は石津西町と新金岡団地東 - サカイタイムズ",
-      "latitude": 34.562389,
-      "longitude": 135.445251,
-      "extractedLocation": "石津西町",
-      "postedAt": "Sat, 07 Nov 2026 23:11:52 GMT",
-      "sourceName": "SNS・速報 (サカイタイムズ)",
-      "sourceType": "sns_news",
-      "sourceURL": "https://news.google.com/rss/articles/CBMiS0FVX3lxTFBEaDVpRnIzQzF0SjNaZ1M1NkhDT19tT1BXREROcnV1ZEswdDgzckp5YW9xbHFyandsdjQ0MjlydnhnUzJHQnVhWjNsYw?oc=5",
-      "isUnverified": true,
-      "category": "車両相互・その他（未確認）"
-    },
-    {
       "id": "sns-d5a70e3baf4d",
       "title": "右折中の神戸市バスと直進のオートバイ、交差点で衝突事故 男性1人が重傷|交通事故 - 神戸新聞",
       "body": "右折中の神戸市バスと直進のオートバイ、交差点で衝突事故 男性1人が重傷|交通事故 - 神戸新聞",
@@ -139,6 +125,20 @@
       "sourceName": "SNS・速報 (神戸新聞)",
       "sourceType": "sns_news",
       "sourceURL": "https://news.google.com/rss/articles/CBMie0FVX3lxTE03UHAzamt5aXBwWmdDOHAzUURYLVdGbnZkV1lrd2VRcVB1QnRQUFlGdGxqLV9aOFRFYllwRTJZaDJ0U2V4T3pITVcxRl9KZ1l2YUNtYlg2XzJUdUs3cm92NS1rLThNOVg0R3lwYzlJd2g1N3Zoc1BCdFlzRQ?oc=5",
+      "isUnverified": true,
+      "category": "車両相互・その他（未確認）"
+    },
+    {
+      "id": "sns-729c5ec3079f",
+      "title": "根岸交差点で車２台が衝突する「右直事故」 男女３人が負傷 宮沢橋開通後から事故が３倍以上に〈仙台市〉（仙台放送） - Y",
+      "body": "根岸交差点で車２台が衝突する「右直事故」 男女３人が負傷 宮沢橋開通後から事故が３倍以上に〈仙台市〉（仙台放送） - Yahoo!ニュース",
+      "latitude": 38.268162,
+      "longitude": 140.869507,
+      "extractedLocation": "仙台市",
+      "postedAt": "Tue, 10 Nov 2026 04:20:01 GMT",
+      "sourceName": "SNS・速報 (Yahoo!ニュース)",
+      "sourceType": "sns_news",
+      "sourceURL": "https://news.google.com/rss/articles/CBMif0FVX3lxTE5aeXB5cV91MVNLeEcyV0Z1TkZ2Q2Z5VkhNMVpVbmY4Y3d0SzNnQXAzRXlDdFVOYU9TRTAxTHJPZXVGNUlDSmhzdzY3dWd3cEpZR2VFN0p5WXJacHZFQXQ1VkdsdkZCeXlZVlMxXzY2dGtVYU9jN243QzM4dUZ0elU?oc=5",
       "isUnverified": true,
       "category": "車両相互・その他（未確認）"
     },
@@ -171,18 +171,18 @@
       "category": "車両相互・その他（未確認）"
     },
     {
-      "id": "sns-799e754f9b6b",
-      "title": "海老名市でトラックと歩行者2人が交通事故 歩行者2人は死亡 トラックは現場から逃走中 - テレ朝NEWS",
-      "body": "海老名市でトラックと歩行者2人が交通事故 歩行者2人は死亡 トラックは現場から逃走中 - テレ朝NEWS",
-      "latitude": 35.446388,
-      "longitude": 139.390839,
-      "extractedLocation": "海老名市",
-      "postedAt": "Fri, 13 Nov 2026 07:35:51 GMT",
-      "sourceName": "SNS・速報 (テレ朝NEWS)",
+      "id": "sns-42365319fe12",
+      "title": "津南町の国道117号線「灰雨反里トンネル」が開通 事故多発解消へ - 十日町タウン情報",
+      "body": "津南町の国道117号線「灰雨反里トンネル」が開通 事故多発解消へ - 十日町タウン情報",
+      "latitude": 37.014168,
+      "longitude": 138.652496,
+      "extractedLocation": "津南町",
+      "postedAt": "Tue, 10 Nov 2026 09:43:00 GMT",
+      "sourceName": "SNS・速報 (十日町タウン情報)",
       "sourceType": "sns_news",
-      "sourceURL": "https://news.google.com/rss/articles/CBMickFVX3lxTE1vV3YtUzl1Q2F6S1ZBY0JHSDQ5WVBxamd6ckM1Vk9oLWw0clVrVjdoZUo3MUZZRU5USmpBTGRDOGZLaWhrQmp5RlhjaHJJQ094ajNaTlRsbVRHRWs0ak5hMU9mazVBa09QNUk2NlBuUHV3QQ?oc=5",
+      "sourceURL": "https://news.google.com/rss/articles/CBMiX0FVX3lxTE1pSUZBT25OSkJhUUxlYVVkNDZKc3pxRzNQeFhIVHlBOW5XQXFWOXVKVlVBSjJBM0ZGWTVUTVZ1TjJVZWdKTGZhUHFwT2hHS1JZVXE2S2hBaXFFNHBUS3Q0?oc=5",
       "isUnverified": true,
-      "category": "人対車両（未確認）"
+      "category": "車両相互・その他（未確認）"
     },
     {
       "id": "sns-bd8a1ddaaa94",
@@ -199,18 +199,18 @@
       "category": "人対車両（未確認）"
     },
     {
-      "id": "sns-42365319fe12",
-      "title": "津南町の国道117号線「灰雨反里トンネル」が開通 事故多発解消へ - 十日町タウン情報",
-      "body": "津南町の国道117号線「灰雨反里トンネル」が開通 事故多発解消へ - 十日町タウン情報",
-      "latitude": 37.014168,
-      "longitude": 138.652496,
-      "extractedLocation": "津南町",
-      "postedAt": "Tue, 10 Nov 2026 09:43:00 GMT",
-      "sourceName": "SNS・速報 (十日町タウン情報)",
+      "id": "sns-7b16317206a8",
+      "title": "歩行者の女性2人がはねられ死亡 トラックは現場の交差点から逃走 ひき逃げ事件として捜査 神奈川・海老名市 - Yahoo",
+      "body": "歩行者の女性2人がはねられ死亡 トラックは現場の交差点から逃走 ひき逃げ事件として捜査 神奈川・海老名市 - Yahoo!ニュース",
+      "latitude": 35.446388,
+      "longitude": 139.390839,
+      "extractedLocation": "海老名市",
+      "postedAt": "Fri, 13 Nov 2026 08:30:38 GMT",
+      "sourceName": "SNS・速報 (Yahoo!ニュース)",
       "sourceType": "sns_news",
-      "sourceURL": "https://news.google.com/rss/articles/CBMiX0FVX3lxTE1pSUZBT25OSkJhUUxlYVVkNDZKc3pxRzNQeFhIVHlBOW5XQXFWOXVKVlVBSjJBM0ZGWTVUTVZ1TjJVZWdKTGZhUHFwT2hHS1JZVXE2S2hBaXFFNHBUS3Q0?oc=5",
+      "sourceURL": "https://news.google.com/rss/articles/CBMif0FVX3lxTE5MVUV6RjUzNmg1U2VnRUxFdDJPYURrRmg0LWpNUzNMSWFZUzYtaHY0dXdTd3k5Tk5JQTZuZkRfQmRJNk1DZmtYZW9RRFkzZjh4X2xEdWV2THc1ZG54THFHaUdyUDkxdkRSUWg3bnRRR1p1czZSRDhSMzJDSGdkWVE?oc=5",
       "isUnverified": true,
-      "category": "車両相互・その他（未確認）"
+      "category": "人対車両（未確認）"
     },
     {
       "id": "sns-d9666847ca02",
@@ -225,6 +225,20 @@
       "sourceURL": "https://news.google.com/rss/articles/CBMif0FVX3lxTE1VRDRpRnc2MFItelJENVZ2dUVIcmFZd1JSN3QyLVZEUGpmNUJ5YTRsUDIxZkYtM3ZFTE50aUo4WlIycnJkY0hUb2JsNTlIazZ2RXR3VDlSeHRpZGhSWXV5OGlZVUY1VndIQjMwdXUwT2lLa0oxOFM0V1g4ZUtDMFk?oc=5",
       "isUnverified": true,
       "category": "車両相互・その他（未確認）"
+    },
+    {
+      "id": "sns-799e754f9b6b",
+      "title": "海老名市でトラックと歩行者2人が交通事故 歩行者2人は死亡 トラックは現場から逃走中 - テレ朝NEWS",
+      "body": "海老名市でトラックと歩行者2人が交通事故 歩行者2人は死亡 トラックは現場から逃走中 - テレ朝NEWS",
+      "latitude": 35.446388,
+      "longitude": 139.390839,
+      "extractedLocation": "海老名市",
+      "postedAt": "Fri, 13 Nov 2026 07:35:51 GMT",
+      "sourceName": "SNS・速報 (テレ朝NEWS)",
+      "sourceType": "sns_news",
+      "sourceURL": "https://news.google.com/rss/articles/CBMickFVX3lxTE1vV3YtUzl1Q2F6S1ZBY0JHSDQ5WVBxamd6ckM1Vk9oLWw0clVrVjdoZUo3MUZZRU5USmpBTGRDOGZLaWhrQmp5RlhjaHJJQ094ajNaTlRsbVRHRWs0ak5hMU9mazVBa09QNUk2NlBuUHV3QQ?oc=5",
+      "isUnverified": true,
+      "category": "人対車両（未確認）"
     },
     {
       "id": "sns-77df71748d25",
@@ -275,7 +289,7 @@
       "latitude": 35.6895,
       "longitude": 139.6917,
       "extractedLocation": "東京都新宿区西新宿",
-      "postedAt": "2026-11-14T22:26:16Z",
+      "postedAt": "2026-11-15T06:36:03Z",
       "sourceName": "SNS (Bluesky / 未確認速報)",
       "sourceType": "sns_bluesky",
       "sourceURL": "https://bsky.app",
@@ -289,7 +303,7 @@
       "latitude": 34.7024,
       "longitude": 135.4959,
       "extractedLocation": "大阪府大阪市北区梅田",
-      "postedAt": "2026-11-14T22:26:16Z",
+      "postedAt": "2026-11-15T06:36:03Z",
       "sourceName": "SNS (Bluesky / 未確認速報)",
       "sourceType": "sns_bluesky",
       "sourceURL": "https://bsky.app",
@@ -303,7 +317,7 @@
       "latitude": 35.1681,
       "longitude": 136.9066,
       "extractedLocation": "愛知県名古屋市中区栄",
-      "postedAt": "2026-11-14T22:26:16Z",
+      "postedAt": "2026-11-15T06:36:03Z",
       "sourceName": "SNS (Bluesky / 未確認速報)",
       "sourceType": "sns_bluesky",
       "sourceURL": "https://bsky.app",
@@ -317,7 +331,7 @@
       "latitude": 33.5902,
       "longitude": 130.4207,
       "extractedLocation": "福岡県福岡市博多区",
-      "postedAt": "2026-11-14T22:26:16Z",
+      "postedAt": "2026-11-15T06:36:03Z",
       "sourceName": "SNS (Bluesky / 未確認速報)",
       "sourceType": "sns_bluesky",
       "sourceURL": "https://bsky.app",
@@ -331,7 +345,7 @@
       "latitude": 43.0618,
       "longitude": 141.3545,
       "extractedLocation": "北海道札幌市中央区",
-      "postedAt": "2026-11-14T22:26:16Z",
+      "postedAt": "2026-11-15T06:36:03Z",
       "sourceName": "SNS (Bluesky / 未確認速報)",
       "sourceType": "sns_bluesky",
       "sourceURL": "https://bsky.app",
