@@ -82,6 +82,8 @@ struct AccidentFilter: Equatable, Codable, Sendable {
     var weather: WeatherFilter = .all
     /// SNS・速報データ（未確認情報）をマップ上に表示するかどうか
     var showSNSReports: Bool = true
+    /// ユーザーが非表示（誤報・除外）に指定したSNS速報ID一覧
+    var hiddenSNSReportIDs: Set<String> = []
     /// 地図の表示モード
     var displayMode: MapDisplayMode = .cluster
     /// 画面内に一度に描画する最大件数（パフォーマンス維持用）
