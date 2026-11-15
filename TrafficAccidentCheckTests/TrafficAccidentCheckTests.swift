@@ -227,4 +227,62 @@ final class TrafficAccidentCheckTests: XCTestCase {
         XCTAssertEqual(debugConfig.bannerUnitID, AdMobConfiguration.officialTestBannerUnitID)
         XCTAssertTrue(debugConfig.isUsingTestAds)
     }
+
+    // MARK: - 5. フィルタ設定の永続化と重複排除テスト
+
+    func testAccidentFilterPersistenceAndHotspotDeduplication() {
+        let suiteName = "TrafficAccidentCheckTests.FilterSuite"
+        guard let testDefaults = UserDefaults(suiteName: suiteName) else {
+            XCTFail("テスト用UserDefaultsの生成に失敗")
+            return
+        }
+        testDefaults.removePersistentDomain(forName: suiteName)
+
+        var customFilter = AccidentFilter()
+        customFilter.targetYear = 2025
+        customFilter.severity = .fatalOnly
+        customFilter.displayMode = .heatmap
+        customFilter.showSNSReports = false
+        customFilter.save(to: testDefaults)
+
+        let restored = AccidentFilter.loadSaved(defaults: testDefaults)
+        XCTAssertEqual(restored, customFilter)
+
+        // 同一IDの事故レコードが重複して渡された場合でも二重カウントされないこと
+        let rec = AccidentRecord(
+            id: 42,
+            latitude: 35.6812,
+            longitude: 139.7671,
+            year: 2025,
+            month: 1,
+            day: 1,
+            hour: 12,
+            minute: 0,
+            severityCode: 1,
+            deaths: 1,
+            injuries: 0,
+            weatherCode: 1,
+            dayNightCode: 12,
+            roadSurfaceCode: 1,
+            roadShapeCode: 1,
+            signalCode: 1,
+            accidentTypeCode: 21,
+            weekdayCode: 1,
+            holidayCode: 3,
+            partyACode: 3,
+            partyBCode: 3,
+            ageACode: 35,
+            ageBCode: 45,
+            prefectureCode: 30,
+            injuryACode: 1,
+            injuryBCode: 2
+        )
+        let spots = DangerAnalyzer.detectHotspots(from: [rec, rec, rec], minimumCount: 3)
+        XCTAssertEqual(spots.first?.accidentCount, 1)
+
+        XCTAssertEqual(
+            SNSAccidentService.stableHashHex(for: "東京都新宿区で追突事故"),
+            SNSAccidentService.stableHashHex(for: "東京都新宿区で追突事故")
+        )
+    }
 }

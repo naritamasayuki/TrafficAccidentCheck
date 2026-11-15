@@ -70,14 +70,20 @@ struct AccidentDetailSheet: View {
                 }
 
                 Section("当事者情報") {
+                    let partyAInfo = "\(AccidentCodebook.partyTypeName(for: record.partyACode)) / "
+                        + "\(AccidentCodebook.ageGroupName(for: record.ageACode))"
+                        + "（\(AccidentCodebook.injuryDegreeName(for: record.injuryACode))）"
                     detailRow(
                         label: "当事者A（第一当事者）",
-                        value: "\(AccidentCodebook.partyTypeName(for: record.partyACode)) / \(AccidentCodebook.ageGroupName(for: record.ageACode))（\(AccidentCodebook.injuryDegreeName(for: record.injuryACode))）",
+                        value: partyAInfo,
                         icon: "car.fill"
                     )
+                    let partyBInfo = "\(AccidentCodebook.partyTypeName(for: record.partyBCode)) / "
+                        + "\(AccidentCodebook.ageGroupName(for: record.ageBCode))"
+                        + "（\(AccidentCodebook.injuryDegreeName(for: record.injuryBCode))）"
                     detailRow(
                         label: "当事者B（相手方）",
-                        value: "\(AccidentCodebook.partyTypeName(for: record.partyBCode)) / \(AccidentCodebook.ageGroupName(for: record.ageBCode))（\(AccidentCodebook.injuryDegreeName(for: record.injuryBCode))）",
+                        value: partyBInfo,
                         icon: "person.2.fill"
                     )
                 }
@@ -200,10 +206,15 @@ struct SNSReportDetailSheet: View {
 /// 絞り込み・表示設定・都市ジャンプシート。
 struct FilterSheet: View {
     @Binding var filter: AccidentFilter
+    @Binding var isFollowingUser: Bool
     @Binding var isProximityAlertEnabled: Bool
+    @Binding var isVoiceAnnouncementEnabled: Bool
     let onJumpToCoordinate: (CLLocationCoordinate2D, String) -> Void
     let onSimulateHotspotAlert: () -> Void
     @Environment(\.dismiss) private var dismiss
+
+    @State private var isShowingFirstResetAlert = false
+    @State private var isShowingSecondResetAlert = false
 
     private let majorCities: [(name: String, coord: CLLocationCoordinate2D)] = [
         ("東京（新宿・都心）", CLLocationCoordinate2D(latitude: 35.6895, longitude: 139.6917)),
@@ -217,6 +228,18 @@ struct FilterSheet: View {
     var body: some View {
         NavigationStack {
             Form {
+                Section("現在地追従・音声アナウンス・接近通知") {
+                    Toggle("移動に合わせてマップを現在地に追従する", isOn: $isFollowingUser)
+                    Toggle("事故多発エリア接近時に通知する", isOn: $isProximityAlertEnabled)
+                    Toggle("事故現場接近時に音声アナウンスで警告する", isOn: $isVoiceAnnouncementEnabled)
+                    Button {
+                        onSimulateHotspotAlert()
+                        dismiss()
+                    } label: {
+                        Label("接近アラート・音声アナウンスをテスト再生", systemImage: "speaker.wave.3.fill")
+                    }
+                }
+
                 Section("マップ表示モード") {
                     Picker("表示形式", selection: $filter.displayMode) {
                         ForEach(MapDisplayMode.allCases) { mode in
@@ -267,16 +290,6 @@ struct FilterSheet: View {
                     }
                 }
 
-                Section("事故多発地点の接近通知") {
-                    Toggle("事故多発エリア接近時に通知する", isOn: $isProximityAlertEnabled)
-                    Button {
-                        onSimulateHotspotAlert()
-                        dismiss()
-                    } label: {
-                        Label("現在マップ内の事故多発地点への接近通知をテスト", systemImage: "bell.badge.fill")
-                    }
-                }
-
                 Section("主要都市へジャンプ") {
                     ForEach(majorCities, id: \.name) { city in
                         Button {
@@ -294,7 +307,7 @@ struct FilterSheet: View {
 
                 Section {
                     Button(role: .destructive) {
-                        filter = AccidentFilter()
+                        isShowingFirstResetAlert = true
                     } label: {
                         Label("絞り込み条件をリセット", systemImage: "arrow.counterclockwise")
                     }
@@ -306,6 +319,23 @@ struct FilterSheet: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("完了") { dismiss() }
                 }
+            }
+            .alert("絞り込み条件をリセットしますか？", isPresented: $isShowingFirstResetAlert) {
+                Button("いいえ", role: .cancel) {}
+                Button("はい", role: .destructive) {
+                    isShowingSecondResetAlert = true
+                }
+            } message: {
+                Text("現在設定されている絞り込み条件や表示モードが初期状態に戻ります。")
+            }
+            .alert("最終確認：本当にリセットしてよろしいですか？", isPresented: $isShowingSecondResetAlert) {
+                Button("いいえ", role: .cancel) {}
+                Button("リセットする", role: .destructive) {
+                    filter = AccidentFilter()
+                    filter.save()
+                }
+            } message: {
+                Text("この操作を実行すると、保存されている絞り込み設定が初期化されます。")
             }
         }
     }

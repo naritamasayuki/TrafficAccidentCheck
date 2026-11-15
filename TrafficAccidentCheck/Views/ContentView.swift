@@ -2,7 +2,7 @@ import CoreLocation
 import SwiftUI
 
 /// メイン画面ビュー。
-/// 地図表示、現在地周辺の危険度スコアカード、クイックフィルタ、SNS速報更新、事故多発地点の接近警告を統合する。
+/// 地図表示、現在地自動追従、現在地周辺の危険度スコアカード、クイックフィルタ、SNS速報更新、事故多発地点の接近警告＆音声アナウンスを統合する。
 struct ContentView: View {
     let isGoogleMapsConfigured: Bool
 
@@ -10,7 +10,7 @@ struct ContentView: View {
     @State private var dataStore: AccidentDataStore = AccidentDataStore.emptyStore()
     @State private var dataLoadErrorMessage: String?
 
-    @State private var filter = AccidentFilter()
+    @State private var filter = AccidentFilter.loadSaved()
     @State private var visibleRecords: [AccidentRecord] = []
     @State private var totalMatchedInBox: Int = 0
     @State private var hotspots: [AccidentHotspot] = []
@@ -20,8 +20,9 @@ struct ContentView: View {
     @State private var lastSNSUpdatedText: String = "同梱データ読込済"
 
     @State private var cameraCenter = LocationAndAlertManager.defaultCoordinate
-    @State private var cameraZoom: Float = 14.5
+    @State private var cameraZoom: Float = 15.0
     @State private var cameraMoveTrigger: Int = 0
+    @State private var hasCenteredOnInitialUserLocation = false
     @State private var currentBoundingBox = CoordinateBoundingBox(
         minLatitude: 35.660,
         maxLatitude: 35.705,
@@ -38,39 +39,37 @@ struct ContentView: View {
     private let snsService = SNSAccidentService()
 
     var body: some View {
-        VStack(spacing: 0) {
-            ZStack(alignment: .top) {
-                // メイン地図レイヤー（Google Maps SDK / 未設定時は MapKit 自動フォールバック）
-                mapLayer
+        ZStack(alignment: .top) {
+            mapLayer
+                .ignoresSafeArea(edges: .top)
 
-                // 上部オーバーレイ（危険度カード・クイックフィルタ・接近警告バナー）
-                VStack(spacing: 8) {
-                    topDangerBar
-                    quickControlBar
+            VStack(spacing: 8) {
+                topDangerBar
+                quickControlBar
 
-                    if !isGoogleMapsConfigured {
-                        apiKeyNoticeBanner
-                    }
-
-                    if let errorMsg = dataLoadErrorMessage {
-                        errorBanner(message: errorMsg)
-                    }
-
-                    if let alertSpot = locationManager.activeHotspotAlert {
-                        hotspotProximityBanner(spot: alertSpot)
-                    }
-
-                    Spacer()
-
-                    bottomStatusLegendBar
+                #if DEBUG
+                if !isGoogleMapsConfigured {
+                    apiKeyNoticeBanner
                 }
-                .padding(.horizontal, 12)
-                .padding(.top, 6)
-                .padding(.bottom, 8)
-            }
+                #endif
 
-            // 画面最下部の Google AdMob バナー広告エリア
-            AdBannerContainerView()
+                if let errorMsg = dataLoadErrorMessage {
+                    errorBanner(message: errorMsg)
+                }
+
+                if let alertSpot = locationManager.activeHotspotAlert {
+                    hotspotProximityBanner(spot: alertSpot)
+                }
+
+                Spacer()
+                bottomStatusLegendBar
+            }
+            .padding(.horizontal, 12)
+            .padding(.top, 6)
+            .padding(.bottom, 8)
+        }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            AdBannerView()
         }
         .sheet(item: $selectedAccident) { record in
             AccidentDetailSheet(record: record)
@@ -83,26 +82,42 @@ struct ContentView: View {
         .sheet(isPresented: $isShowingFilterSheet) {
             FilterSheet(
                 filter: $filter,
+                isFollowingUser: $locationManager.isFollowingUser,
                 isProximityAlertEnabled: $locationManager.isProximityAlertEnabled,
+                isVoiceAnnouncementEnabled: $locationManager.isVoiceAnnouncementEnabled,
                 onJumpToCoordinate: { coord, _ in
+                    locationManager.isFollowingUser = false
                     jumpToCoordinate(coord)
                 },
                 onSimulateHotspotAlert: {
-                    if let spot = hotspots.first {
-                        locationManager.simulateApproach(to: spot.coordinate)
-                    }
+                    let targetSpot = hotspots.first ?? AccidentHotspot(
+                        id: "hotspot-demo",
+                        coordinate: locationManager.userCoordinate ?? cameraCenter,
+                        accidentCount: 6,
+                        fatalCount: 1,
+                        dominantType: "車両相互（衝突・追突等）"
+                    )
+                    locationManager.simulateApproach(to: targetSpot)
                 }
             )
         }
-        .onChange(of: filter) { _, _ in
+        .onChange(of: filter) { _, newFilter in
+            newFilter.save()
             refreshMapData()
+        }
+        .onChange(of: locationManager.locationUpdateCount) { _, _ in
+            guard let userCoord = locationManager.userCoordinate else { return }
+            if !hasCenteredOnInitialUserLocation || locationManager.isFollowingUser {
+                hasCenteredOnInitialUserLocation = true
+                followUserCoordinate(userCoord)
+            } else {
+                refreshMapData()
+            }
         }
         .task {
             await initializeAppData()
         }
     }
-
-    // MARK: - Map Layer
 
     @ViewBuilder
     private var mapLayer: some View {
@@ -122,12 +137,8 @@ struct ContentView: View {
                     cameraZoom = zoom
                     refreshMapData()
                 },
-                onSelectAccident: { rec in
-                    selectedAccident = rec
-                },
-                onSelectSNSReport: { report in
-                    selectedSNSReport = report
-                }
+                onSelectAccident: { selectedAccident = $0 },
+                onSelectSNSReport: { selectedSNSReport = $0 }
             )
         } else {
             FallbackMapKitView(
@@ -135,6 +146,7 @@ struct ContentView: View {
                 snsReports: activeSNS,
                 hotspots: hotspots,
                 displayMode: filter.displayMode,
+                userCoordinate: locationManager.userCoordinate,
                 cameraCenter: $cameraCenter,
                 cameraMoveTrigger: cameraMoveTrigger,
                 onRegionChanged: { box, center, zoom in
@@ -143,18 +155,16 @@ struct ContentView: View {
                     cameraZoom = zoom
                     refreshMapData()
                 },
-                onSelectAccident: { rec in
-                    selectedAccident = rec
-                },
-                onSelectSNSReport: { report in
-                    selectedSNSReport = report
-                }
+                onSelectAccident: { selectedAccident = $0 },
+                onSelectSNSReport: { selectedSNSReport = $0 }
             )
         }
     }
+}
 
-    // MARK: - Overlay Components
+// MARK: - ContentView Subviews & Logic
 
+extension ContentView {
     private var topDangerBar: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 10) {
@@ -173,7 +183,8 @@ struct ContentView: View {
                                 .padding(.vertical, 2)
                                 .background(colorForDanger(assessment.level).opacity(0.18), in: Capsule())
                         }
-                        Text("人身事故 \(assessment.totalAccidents)件（死亡 \(assessment.fatalAccidents)件 / 夜間 \(Int((assessment.nightAccidentRatio * 100).rounded()))%）")
+                        let nightPct = Int((assessment.nightAccidentRatio * 100).rounded())
+                        Text("人身事故 \(assessment.totalAccidents)件（死亡 \(assessment.fatalAccidents)件 / 夜間 \(nightPct)%）")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -218,61 +229,59 @@ struct ContentView: View {
     private var quickControlBar: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
-                Button {
+                pillButton(
+                    title: locationManager.isFollowingUser ? "現在地追従中" : "現在地へ移動",
+                    icon: locationManager.isFollowingUser ? "location.fill" : "location",
+                    activeColor: locationManager.isFollowingUser ? .blue : nil
+                ) {
+                    locationManager.isFollowingUser.toggle()
+                    if locationManager.isFollowingUser {
+                        if let coord = locationManager.userCoordinate {
+                            followUserCoordinate(coord)
+                        } else {
+                            locationManager.requestPermissionsAndStart()
+                        }
+                    }
+                }
+
+                pillButton(
+                    title: locationManager.isVoiceAnnouncementEnabled ? "音声案内ON" : "音声案内OFF",
+                    icon: locationManager.isVoiceAnnouncementEnabled ? "speaker.wave.2.fill" : "speaker.slash.fill",
+                    activeColor: locationManager.isVoiceAnnouncementEnabled ? .teal : nil
+                ) {
+                    locationManager.isVoiceAnnouncementEnabled.toggle()
+                }
+
+                pillButton(
+                    title: filter.hasActiveCriteria ? "絞り込み中" : "絞り込み・都市選択",
+                    icon: "slider.horizontal.3",
+                    activeColor: filter.hasActiveCriteria ? .accentColor : nil
+                ) {
                     isShowingFilterSheet = true
-                } label: {
-                    Label(
-                        filter.hasActiveCriteria ? "絞り込み中" : "絞り込み・都市選択",
-                        systemImage: "slider.horizontal.3"
-                    )
-                    .font(.caption.bold())
-                    .padding(.horizontal, 11)
-                    .padding(.vertical, 7)
-                    .background(filter.hasActiveCriteria ? Color.accentColor : Color(.secondarySystemBackground))
-                    .foregroundStyle(filter.hasActiveCriteria ? .white : .primary)
-                    .clipShape(Capsule())
                 }
 
-                Button {
+                pillButton(
+                    title: filter.displayMode == .cluster ? "ヒートマップへ切替" : "ピン表示へ切替",
+                    icon: filter.displayMode == .cluster ? "flame.fill" : "mappin.and.ellipse",
+                    activeColor: nil
+                ) {
                     filter.displayMode = (filter.displayMode == .cluster) ? .heatmap : .cluster
-                } label: {
-                    Label(
-                        filter.displayMode == .cluster ? "ヒートマップへ切替" : "ピン表示へ切替",
-                        systemImage: filter.displayMode == .cluster ? "flame.fill" : "mappin.and.ellipse"
-                    )
-                    .font(.caption.bold())
-                    .padding(.horizontal, 11)
-                    .padding(.vertical, 7)
-                    .background(Color(.secondarySystemBackground))
-                    .foregroundStyle(.primary)
-                    .clipShape(Capsule())
                 }
 
-                Button {
+                pillButton(
+                    title: "死亡事故のみ",
+                    icon: "xmark.octagon.fill",
+                    activeColor: filter.severity == .fatalOnly ? .red : nil
+                ) {
                     filter.severity = (filter.severity == .fatalOnly) ? .all : .fatalOnly
-                } label: {
-                    Label("死亡事故のみ", systemImage: "xmark.octagon.fill")
-                        .font(.caption.bold())
-                        .padding(.horizontal, 11)
-                        .padding(.vertical, 7)
-                        .background(filter.severity == .fatalOnly ? Color.red : Color(.secondarySystemBackground))
-                        .foregroundStyle(filter.severity == .fatalOnly ? .white : .primary)
-                        .clipShape(Capsule())
                 }
 
-                Button {
+                pillButton(
+                    title: "SNS速報(未確認): \(snsReports.count)件",
+                    icon: filter.showSNSReports ? "checkmark.circle.fill" : "circle",
+                    activeColor: filter.showSNSReports ? .purple : nil
+                ) {
                     filter.showSNSReports.toggle()
-                } label: {
-                    Label(
-                        "SNS速報(未確認): \( snsReports.count)件",
-                        systemImage: filter.showSNSReports ? "checkmark.circle.fill" : "circle"
-                    )
-                    .font(.caption.bold())
-                    .padding(.horizontal, 11)
-                    .padding(.vertical, 7)
-                    .background(filter.showSNSReports ? Color.purple : Color(.secondarySystemBackground))
-                    .foregroundStyle(filter.showSNSReports ? .white : .primary)
-                    .clipShape(Capsule())
                 }
 
                 Button {
@@ -298,11 +307,23 @@ struct ContentView: View {
         }
     }
 
+    private func pillButton(title: String, icon: String, activeColor: Color?, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Label(title, systemImage: icon)
+                .font(.caption.bold())
+                .padding(.horizontal, 11)
+                .padding(.vertical, 7)
+                .background(activeColor ?? Color(.secondarySystemBackground))
+                .foregroundStyle(activeColor != nil ? .white : .primary)
+                .clipShape(Capsule())
+        }
+    }
+
     private var apiKeyNoticeBanner: some View {
         HStack(spacing: 8) {
             Image(systemName: "map.fill")
                 .foregroundStyle(.orange)
-            Text("Config/Secrets.xcconfig に Google Maps APIキーを設定すると Google Maps SDK 描画に切り替わります（現在は互換マップで動作中）")
+            Text("開発用表示: Config/Secrets.xcconfig に Google Maps APIキーを設定すると SDK 描画に切り替わります")
                 .font(.caption2)
                 .foregroundStyle(.primary)
             Spacer()
@@ -325,7 +346,7 @@ struct ContentView: View {
 
     private func hotspotProximityBanner(spot: AccidentHotspot) -> some View {
         HStack(alignment: .top, spacing: 10) {
-            Image(systemName: "bell.and.waves.left.and.right.fill")
+            Image(systemName: "speaker.wave.3.fill")
                 .font(.title3)
                 .foregroundStyle(.white)
             VStack(alignment: .leading, spacing: 3) {
@@ -373,12 +394,9 @@ struct ContentView: View {
         .background(.ultraThinMaterial, in: Capsule())
     }
 
-    // MARK: - Data & Actions
-
     private func initializeAppData() async {
         locationManager.requestPermissionsAndStart()
 
-        // 1. 公式オープンデータバイナリのロード
         do {
             let store = try AccidentDataStore()
             self.dataStore = store
@@ -386,14 +404,15 @@ struct ContentView: View {
             self.dataLoadErrorMessage = error.localizedDescription
         }
 
-        // 2. 同梱SNS速報データのロード
-        let initialSNS = snsService.loadBundledReports()
-        self.snsReports = initialSNS
+        self.snsReports = snsService.loadBundledReports()
 
-        // 3. 初回マップ領域検索＆危険度計算
-        refreshMapData()
+        if let userCoord = locationManager.userCoordinate {
+            hasCenteredOnInitialUserLocation = true
+            followUserCoordinate(userCoord)
+        } else {
+            refreshMapData()
+        }
 
-        // 4. バックグラウンドで最新の無料SNS・速報フィードを取得
         await refreshSNSFeed()
     }
 
@@ -402,12 +421,13 @@ struct ContentView: View {
         visibleRecords = queryResult.records
         totalMatchedInBox = queryResult.totalMatchedInBox
 
-        let detectedHotspots = DangerAnalyzer.detectHotspots(from: queryResult.records)
+        let targetCoord = locationManager.userCoordinate ?? cameraCenter
+        let nearbyRecords = dataStore.recordsNear(coordinate: targetCoord, radiusMeters: 500.0, filter: filter)
+        let hotspotSource = nearbyRecords.isEmpty ? queryResult.records : (queryResult.records + nearbyRecords)
+        let detectedHotspots = DangerAnalyzer.detectHotspots(from: hotspotSource, minimumCount: 3)
         hotspots = detectedHotspots
         locationManager.updateMonitoredHotspots(detectedHotspots)
 
-        let targetCoord = locationManager.userCoordinate ?? cameraCenter
-        let nearbyRecords = dataStore.recordsNear(coordinate: targetCoord, radiusMeters: 500.0, filter: filter)
         dangerAssessment = DangerAnalyzer.evaluate(
             center: targetCoord,
             accidentsInRadius: nearbyRecords,
@@ -421,11 +441,22 @@ struct ContentView: View {
         isRefreshingSNS = true
         defer { isRefreshingSNS = false }
 
-        let updated = await snsService.fetchLatestFreeSNSReports(existingReports: snsReports)
-        snsReports = updated
+        snsReports = await snsService.fetchLatestFreeSNSReports(existingReports: snsReports)
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm"
         lastSNSUpdatedText = "\(formatter.string(from: Date())) 更新"
+        refreshMapData()
+    }
+
+    private func followUserCoordinate(_ coord: CLLocationCoordinate2D) {
+        cameraCenter = coord
+        cameraMoveTrigger += 1
+        currentBoundingBox = CoordinateBoundingBox(
+            minLatitude: coord.latitude - 0.018,
+            maxLatitude: coord.latitude + 0.018,
+            minLongitude: coord.longitude - 0.018,
+            maxLongitude: coord.longitude + 0.018
+        )
         refreshMapData()
     }
 

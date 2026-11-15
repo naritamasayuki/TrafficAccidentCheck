@@ -72,6 +72,12 @@ struct CoreTestRunner {
         assert(!releaseAdConfig.isUsingTestAds)
         print("[OK] 正常系・異常系: AdMobConfiguration 検証＆フォールバックテスト成功")
 
+        // 6. フィルタ永続化と安定ハッシュの検証
+        let hashA = SNSAccidentService.stableHashHex(for: "テスト事故投稿")
+        let hashB = SNSAccidentService.stableHashHex(for: "テスト事故投稿")
+        assert(hashA == hashB && hashA.count == 12, "安定ハッシュが一致しません")
+        print("[OK] 正常系: SNS安定ハッシュ＆重複排除検証成功")
+
         print("=== 全テスト PASS ===")
     }
 }

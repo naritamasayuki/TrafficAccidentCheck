@@ -9,10 +9,31 @@ final class AdMobService: ObservableObject {
     static let shared = AdMobService()
 
     @Published private(set) var isInitialized = false
+    private var hasStartedFlow = false
     let configuration: AdMobConfiguration
 
     private init() {
         self.configuration = AdMobConfiguration.current()
+    }
+
+    /// アプリがアクティブになった後、ATTトラッキング許可の確認完了を待ってから Google Mobile Ads SDK を初期化する。
+    func startAdFlowAfterActive() {
+        guard !hasStartedFlow else {
+            initializeIfNeeded()
+            return
+        }
+        hasStartedFlow = true
+
+        Task { @MainActor in
+            // iOS 17+ でウィンドウが完全に前面化してからATTダイアログを表示するための短い待機
+            try? await Task.sleep(nanoseconds: 600_000_000)
+            let status = ATTrackingManager.trackingAuthorizationStatus
+            if status == .notDetermined {
+                let newStatus = await ATTrackingManager.requestTrackingAuthorization()
+                AppLogger.ad.info("ATTトラッキング許可ステータス更新: \(String(describing: newStatus.rawValue))")
+            }
+            self.initializeIfNeeded()
+        }
     }
 
     /// Info.plist の `GADApplicationIdentifier` を検証した上で Google Mobile Ads SDK を安全に初期化する。
@@ -36,12 +57,7 @@ final class AdMobService: ObservableObject {
 
     /// iOS 14.5+ 向けの ATT（トラッキング許可）ダイアログを表示する。
     func requestTrackingAuthorizationIfNeeded() {
-        let status = ATTrackingManager.trackingAuthorizationStatus
-        guard status == .notDetermined else { return }
-
-        ATTrackingManager.requestTrackingAuthorization { newStatus in
-            AppLogger.ad.info("ATTトラッキング許可ステータス更新: \(String(describing: newStatus.rawValue))")
-        }
+        startAdFlowAfterActive()
     }
 }
 
@@ -147,7 +163,10 @@ struct AdBannerContainerView: View {
             Divider()
         }
         .onAppear {
-            adService.initializeIfNeeded()
+            adService.startAdFlowAfterActive()
         }
     }
 }
+
+/// 共通UI仕様に基づく下部バナー広告ビューの型エイリアス。
+typealias AdBannerView = AdBannerContainerView

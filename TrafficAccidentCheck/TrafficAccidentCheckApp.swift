@@ -28,10 +28,12 @@ struct TrafficAccidentCheckApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView(isGoogleMapsConfigured: isGoogleMapsConfigured)
+                .task {
+                    AdMobService.shared.startAdFlowAfterActive()
+                }
                 .onChange(of: scenePhase) { _, newPhase in
                     if newPhase == .active {
-                        AdMobService.shared.initializeIfNeeded()
-                        AdMobService.shared.requestTrackingAuthorizationIfNeeded()
+                        AdMobService.shared.startAdFlowAfterActive()
                     }
                 }
         }

@@ -148,7 +148,9 @@ enum DangerAnalyzer {
         }
 
         var buckets: [GridKey: [AccidentRecord]] = [:]
+        var seenIDs = Set<Int>()
         for rec in records {
+            guard seenIDs.insert(rec.id).inserted else { continue }
             let key = GridKey(
                 latBucket: Int((rec.latitude / gridStep).rounded()),
                 lonBucket: Int((rec.longitude / gridStep).rounded())
