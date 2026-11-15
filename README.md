@@ -96,3 +96,40 @@ ADMOB_BANNER_UNIT_ID = ca-app-pub-XXXXXXXXXXXXXXXX/ZZZZZZZZZZ
   - [`.github/workflows/ci.yml`](.github/workflows/ci.yml): Push / PR 時に Python テスト・Flake8・SwiftLint・Swift 単体テスト・Xcode ビルドを自動実行
   - [`.github/workflows/codeql.yml`](.github/workflows/codeql.yml): CodeQL による脆弱性スキャン
   - [`.github/dependabot.yml`](.github/dependabot.yml): Dependabot による依存パッケージの脆弱性自動チェック
+
+---
+
+## Google ドライブ共有リポジトリと Windows ⇔ Mac 連携手順
+
+GitHub（`origin`）の無料枠制限対策および Windows ⇔ Mac 間のシームレスな同期のため、Google ドライブ上にも共有用ベアリポジトリと作業用フォルダを構成しています（詳細は [`AGENTS.md`](AGENTS.md) を参照）。
+
+### 1. Google ドライブ上の配置構成
+- **Git 共有ベアリポジトリ（リモート名 `gdrive`）**:
+  - Windows: `D:\Google_drive\GitRepos\TrafficAccidentCheck.git`
+  - Mac: `~/Library/CloudStorage/GoogleDrive-<アカウント>/マイドライブ/GitRepos/TrafficAccidentCheck.git`
+- **Google ドライブ上の作業用フォルダ**:
+  - Windows: `D:\Google_drive\TrafficAccidentCheck`
+  - Mac: `~/Library/CloudStorage/GoogleDrive-<アカウント>/マイドライブ/TrafficAccidentCheck`
+- **共通開発方針 MD ファイル**:
+  - Windows: `D:\Google_drive\Anti-Gravity 開発方針.md`
+  - Mac: `~/Library/CloudStorage/GoogleDrive-<アカウント>/マイドライブ/Anti-Gravity 開発方針.md`
+
+### 2. Windows 側でのプッシュ・同期コマンド
+```powershell
+cd D:\Project\TrafficAccidentCheck
+git push origin main
+git push gdrive main
+git -C "D:\Google_drive\TrafficAccidentCheck" pull
+```
+
+### 3. Mac 側でのクローン・プル・開発方針（MD）の反映手順
+- **Mac ローカルへクローンして Xcode でビルドする場合（推奨）**:
+  ```bash
+  git clone ~/Library/CloudStorage/GoogleDrive-*/マイドライブ/GitRepos/TrafficAccidentCheck.git ~/Projects/TrafficAccidentCheck
+  ```
+  （※ 既存の Mac ローカルリポジトリがある場合は `git remote add gdrive ~/Library/CloudStorage/GoogleDrive-*/マイドライブ/GitRepos/TrafficAccidentCheck.git` で追加し、`git pull gdrive main` で同期可能）
+- **Mac の Antigravity グローバルルールへ開発方針 MD を反映する場合**:
+  ```bash
+  mkdir -p ~/.gemini/config/rules
+  cp ~/Library/CloudStorage/GoogleDrive-*/マイドライブ/"Anti-Gravity 開発方針.md" ~/.gemini/config/rules/AGENTS.md
+  ```
