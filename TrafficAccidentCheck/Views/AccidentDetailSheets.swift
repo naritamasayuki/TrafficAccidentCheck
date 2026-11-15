@@ -99,6 +99,17 @@ struct AccidentDetailSheet: View {
                         value: "警察庁 交通事故統計オープンデータ（\(record.year)年本票）",
                         icon: "checkmark.seal.fill"
                     )
+                    if let npaURL = URL(
+                        string: "https://www.npa.go.jp/publications/statistics/koutsuu/opendata/index_opendata.html"
+                    ) {
+                        Link(destination: npaURL) {
+                            Label("警察庁 オープンデータ公開ページを開く", systemImage: "link")
+                                .font(.footnote.bold())
+                        }
+                    }
+                    Text("※本アプリは警察庁が公開しているオープンデータを利用した独自の民間アプリであり、警察庁・政府機関・自治体等を代表するものではなく提携関係もありません。")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
                 }
             }
             .navigationTitle("事故詳細")
@@ -131,6 +142,7 @@ struct AccidentDetailSheet: View {
 /// ユーザー要望に基づき、「出典: SNS（未確認情報）」を最上部に明確に表示する。
 struct SNSReportDetailSheet: View {
     let report: SNSAccidentReport
+    var onHideReport: (() -> Void)?
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
 
@@ -179,15 +191,25 @@ struct SNSReportDetailSheet: View {
                     )
                 }
 
-                if let url = URL(string: report.sourceURL),
-                   let scheme = url.scheme?.lowercased(),
-                   scheme == "https" || scheme == "http" {
-                    Section {
+                Section {
+                    if let url = URL(string: report.sourceURL),
+                       let scheme = url.scheme?.lowercased(),
+                       scheme == "https" || scheme == "http" {
                         Button {
                             openURL(url)
                         } label: {
                             Label("元のSNS投稿・速報ページを開く", systemImage: "safari.fill")
                                 .font(.subheadline.bold())
+                        }
+                    }
+
+                    if let onHideReport {
+                        Button(role: .destructive) {
+                            onHideReport()
+                            dismiss()
+                        } label: {
+                            Label("この未確認速報を誤報・不適切として非表示にする", systemImage: "eye.slash.fill")
+                                .font(.subheadline)
                         }
                     }
                 }
@@ -236,7 +258,7 @@ struct FilterSheet: View {
                         onSimulateHotspotAlert()
                         dismiss()
                     } label: {
-                        Label("接近アラート・音声アナウンスをテスト再生", systemImage: "speaker.wave.3.fill")
+                        Label("音声アナウンス・接近警告のサンプル再生（音量確認）", systemImage: "speaker.wave.3.fill")
                     }
                 }
 
@@ -310,6 +332,32 @@ struct FilterSheet: View {
                         isShowingFirstResetAlert = true
                     } label: {
                         Label("絞り込み条件をリセット", systemImage: "arrow.counterclockwise")
+                    }
+                }
+
+                Section("安全運転に関するご注意・データ出典・免責事項") {
+                    Text("⚠️ 運転中のスマートフォンの画面注視・操作は大変危険ですので絶対におやめください。走行中は音声アナウンス機能をご活用いただき、画面操作は安全な場所に停車してから行ってください。")
+                        .font(.caption)
+                        .foregroundStyle(.primary)
+
+                    Text("【公的機関との非提携に関する明記】\n本アプリは警察庁および国土地理院が公開しているオープンデータを利用した独自の民間アプリケーションであり、警察庁・政府機関・自治体等を代表するものではなく、提携・承認関係もありません。")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+
+                    if let npaURL = URL(
+                        string: "https://www.npa.go.jp/publications/statistics/koutsuu/opendata/index_opendata.html"
+                    ) {
+                        Link(destination: npaURL) {
+                            Label("出典1: 警察庁 交通事故統計情報のオープンデータ", systemImage: "link")
+                                .font(.caption)
+                        }
+                    }
+
+                    if let gsiURL = URL(string: "https://www.gsi.go.jp/") {
+                        Link(destination: gsiURL) {
+                            Label("出典2: 国土地理院 住所検索API（位置座標変換）", systemImage: "link")
+                                .font(.caption)
+                        }
                     }
                 }
             }

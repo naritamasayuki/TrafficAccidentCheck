@@ -11,7 +11,7 @@
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>NSUserTrackingUsageDescription</key>
-	<string>お客様に最適な広告を表示し、無料でのアプリ提供を維持するために識別子を使用します。</string>
+	<string>お客様に関連性の高い広告を表示し、交通事故マップおよび音声安全案内機能を無料で提供し続けるために広告識別子を使用します（許可しない場合でもアプリの全機能をご利用いただけます）。</string>
 	<key>SKAdNetworkItems</key>
 	<array>
 		<dict>

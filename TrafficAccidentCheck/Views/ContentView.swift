@@ -76,8 +76,13 @@ struct ContentView: View {
                 .presentationDetents([.medium, .large])
         }
         .sheet(item: $selectedSNSReport) { report in
-            SNSReportDetailSheet(report: report)
-                .presentationDetents([.medium, .large])
+            SNSReportDetailSheet(
+                report: report,
+                onHideReport: {
+                    filter.hiddenSNSReportIDs.insert(report.id)
+                }
+            )
+            .presentationDetents([.medium, .large])
         }
         .sheet(isPresented: $isShowingFilterSheet) {
             FilterSheet(
@@ -121,7 +126,9 @@ struct ContentView: View {
 
     @ViewBuilder
     private var mapLayer: some View {
-        let activeSNS = filter.showSNSReports ? snsReports : []
+        let activeSNS = filter.showSNSReports
+            ? snsReports.filter { !filter.hiddenSNSReportIDs.contains($0.id) }
+            : []
         if isGoogleMapsConfigured {
             GoogleMapContainerView(
                 records: visibleRecords,
