@@ -153,16 +153,20 @@ struct GoogleMapContainerView: UIViewRepresentable {
                     clusterManager?.cluster()
                 case .heatmap:
                     clusterManager?.cluster()
-                    let weighted = records.map { rec in
-                        GMUWeightedLatLng(
-                            coordinate: rec.coordinate,
-                            intensity: rec.isFatal ? 6.0 : 1.5
-                        )
+                    if records.isEmpty {
+                        heatmapLayer?.map = nil
+                    } else {
+                        let weighted = records.map { rec in
+                            GMUWeightedLatLng(
+                                coordinate: rec.coordinate,
+                                intensity: rec.isFatal ? 6.0 : 1.5
+                            )
+                        }
+                        heatmapLayer?.weightedData = weighted
+                        heatmapLayer?.map = nil
+                        heatmapLayer?.map = mapView
+                        heatmapLayer?.clearTileCache()
                     }
-                    heatmapLayer?.weightedData = weighted
-                    heatmapLayer?.map = nil
-                    heatmapLayer?.map = mapView
-                    heatmapLayer?.clearTileCache()
                 }
 
                 // ホットスポット（事故多発150m圏）のサークルを更新
@@ -273,6 +277,7 @@ struct FallbackMapKitView: View {
     let snsReports: [SNSAccidentReport]
     let hotspots: [AccidentHotspot]
     let displayMode: MapDisplayMode
+    let userCoordinate: CLLocationCoordinate2D?
     @Binding var cameraCenter: CLLocationCoordinate2D
     let cameraMoveTrigger: Int
     let onRegionChanged: (CoordinateBoundingBox, CLLocationCoordinate2D, Float) -> Void
@@ -282,13 +287,28 @@ struct FallbackMapKitView: View {
     @State private var position: MapCameraPosition = .region(
         MKCoordinateRegion(
             center: LocationAndAlertManager.defaultCoordinate,
-            span: MKCoordinateSpan(latitudeDelta: 0.04, longitudeDelta: 0.04)
+            span: MKCoordinateSpan(latitudeDelta: 0.03, longitudeDelta: 0.03)
         )
     )
 
     var body: some View {
         Map(position: $position) {
             UserAnnotation()
+
+            if let userCoord = userCoordinate {
+                Annotation("現在地", coordinate: userCoord) {
+                    ZStack {
+                        Circle()
+                            .fill(Color.blue.opacity(0.25))
+                            .frame(width: 32, height: 32)
+                        Circle()
+                            .fill(Color.blue)
+                            .frame(width: 14, height: 14)
+                            .overlay(Circle().stroke(Color.white, lineWidth: 2.5))
+                            .shadow(radius: 2)
+                    }
+                }
+            }
 
             // ホットスポット（事故多発エリア）サークル
             ForEach(hotspots.prefix(10)) { spot in

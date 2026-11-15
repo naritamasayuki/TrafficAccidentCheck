@@ -26,6 +26,7 @@ enum AppLogger {
         line: Int = #line
     ) {
         let stack = Thread.callStackSymbols.prefix(6).joined(separator: " | ")
-        logger.error("[\(file, privacy: .public):\(line)] \(context, privacy: .public) - エラー詳細: \(error.localizedDescription, privacy: .public) | Stack: \(stack, privacy: .public)")
+        let msg = "[\(file):\(line)] \(context) - 詳細: \(error.localizedDescription) | \(stack)"
+        logger.error("\(msg, privacy: .public)")
     }
 }

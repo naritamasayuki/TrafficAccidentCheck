@@ -1,7 +1,7 @@
 import Foundation
 
 /// 地図上の表示モード（ピン＋クラスタリング または ヒートマップ）。
-enum MapDisplayMode: String, CaseIterable, Identifiable, Sendable {
+enum MapDisplayMode: String, CaseIterable, Identifiable, Codable, Sendable {
     case cluster = "ピン表示"
     case heatmap = "ヒートマップ"
 
@@ -9,7 +9,7 @@ enum MapDisplayMode: String, CaseIterable, Identifiable, Sendable {
 }
 
 /// 重大度フィルタ区分。
-enum SeverityFilter: String, CaseIterable, Identifiable, Sendable {
+enum SeverityFilter: String, CaseIterable, Identifiable, Codable, Sendable {
     case all = "すべて"
     case fatalOnly = "死亡事故のみ"
     case injuryOnly = "負傷事故のみ"
@@ -18,7 +18,7 @@ enum SeverityFilter: String, CaseIterable, Identifiable, Sendable {
 }
 
 /// 昼夜フィルタ区分。
-enum TimeOfDayFilter: String, CaseIterable, Identifiable, Sendable {
+enum TimeOfDayFilter: String, CaseIterable, Identifiable, Codable, Sendable {
     case all = "全時間帯"
     case daytime = "昼間"
     case nighttime = "夜間"
@@ -27,7 +27,7 @@ enum TimeOfDayFilter: String, CaseIterable, Identifiable, Sendable {
 }
 
 /// 事故類型フィルタ区分。
-enum AccidentTypeFilter: String, CaseIterable, Identifiable, Sendable {
+enum AccidentTypeFilter: String, CaseIterable, Identifiable, Codable, Sendable {
     case all = "すべての類型"
     case pedestrian = "人対車両（歩行者）"
     case vehicleToVehicle = "車両相互"
@@ -46,7 +46,7 @@ enum AccidentTypeFilter: String, CaseIterable, Identifiable, Sendable {
 }
 
 /// 天候フィルタ区分。
-enum WeatherFilter: String, CaseIterable, Identifiable, Sendable {
+enum WeatherFilter: String, CaseIterable, Identifiable, Codable, Sendable {
     case all = "全天候"
     case clear = "晴"
     case cloudy = "曇"
@@ -67,7 +67,9 @@ enum WeatherFilter: String, CaseIterable, Identifiable, Sendable {
 }
 
 /// 交通事故データの絞り込み条件一式。
-struct AccidentFilter: Equatable, Sendable {
+struct AccidentFilter: Equatable, Codable, Sendable {
+    static let storageKey = "TrafficAccidentCheck.SavedFilter.v1"
+
     /// 対象年（nil の場合は全年度）
     var targetYear: UInt16? = nil
     /// 重大度（すべて / 死亡のみ / 負傷のみ）
@@ -84,6 +86,29 @@ struct AccidentFilter: Equatable, Sendable {
     var displayMode: MapDisplayMode = .cluster
     /// 画面内に一度に描画する最大件数（パフォーマンス維持用）
     var maxVisibleRecords: Int = 1500
+
+    /// 保存済みのフィルタ設定を復元する（存在しない場合やデコードエラー時はデフォルト値を返す）。
+    static func loadSaved(defaults: UserDefaults = .standard) -> AccidentFilter {
+        guard let data = defaults.data(forKey: storageKey) else {
+            return AccidentFilter()
+        }
+        do {
+            return try JSONDecoder().decode(AccidentFilter.self, from: data)
+        } catch {
+            AppLogger.logError(AppLogger.data, context: "保存済みフィルタ設定の復元失敗", error: error)
+            return AccidentFilter()
+        }
+    }
+
+    /// 現在のフィルタ設定を永続化する。
+    func save(to defaults: UserDefaults = .standard) {
+        do {
+            let encoded = try JSONEncoder().encode(self)
+            defaults.set(encoded, forKey: Self.storageKey)
+        } catch {
+            AppLogger.logError(AppLogger.data, context: "フィルタ設定の保存失敗", error: error)
+        }
+    }
 
     /// フィルタが初期状態から変更されているかどうか
     var hasActiveCriteria: Bool {

@@ -56,7 +56,7 @@ final class SNSAccidentService: Sendable {
                 continue
             }
 
-            let id = "sns-live-\(abs(post.text.prefix(40).hashValue))"
+            let id = "sns-live-\(Self.stableHashHex(for: String(post.text.prefix(60))))"
             let report = SNSAccidentReport(
                 id: id,
                 title: String(post.text.prefix(65)),
@@ -111,7 +111,12 @@ final class SNSAccidentService: Sendable {
     static func extractJapaneseLocation(from text: String) -> String? {
         guard !text.isEmpty else { return nil }
         let normalized = text.replacingOccurrences(of: "東京・", with: "東京都")
-        let prefList = "北海道|青森県|岩手県|宮城県|秋田県|山形県|福島県|茨城県|栃木県|群馬県|埼玉県|千葉県|東京都|神奈川県|新潟県|富山県|石川県|福井県|山梨県|長野県|岐阜県|静岡県|愛知県|三重県|滋賀県|京都府|大阪府|兵庫県|奈良県|和歌山県|鳥取県|島根県|岡山県|広島県|山口県|徳島県|香川県|愛媛県|高知県|福岡県|佐賀県|長崎県|熊本県|大分県|宮崎県|鹿児島県|沖縄県"
+        let prefList = [
+            "北海道|青森県|岩手県|宮城県|秋田県|山形県|福島県|茨城県|栃木県|群馬県|埼玉県|千葉県|東京都|神奈川県",
+            "新潟県|富山県|石川県|福井県|山梨県|長野県|岐阜県|静岡県|愛知県|三重県|滋賀県|京都府|大阪府|兵庫県",
+            "奈良県|和歌山県|鳥取県|島根県|岡山県|広島県|山口県|徳島県|香川県|愛媛県|高知県|福岡県|佐賀県|長崎県",
+            "熊本県|大分県|宮崎県|鹿児島県|沖縄県"
+        ].joined(separator: "|")
         let patterns = [
             "((?:\(prefList))[一-龥]{1,6}市[一-龥]{1,5}区)",
             "((?:\(prefList))[^\\s、。！？「」『』（）()・]{1,10}?(?:市|区|町|村))",
@@ -149,6 +154,16 @@ final class SNSAccidentService: Sendable {
             return "列車・踏切（未確認）"
         }
         return "車両相互・その他（未確認）"
+    }
+
+    /// オーバーフローを起こさず起動間で一貫した16進ハッシュ文字列を生成する（FNV-1a 64bit）。
+    static func stableHashHex(for text: String) -> String {
+        var hash: UInt64 = 14_695_981_039_346_656_037
+        for byte in text.utf8 {
+            hash ^= UInt64(byte)
+            hash = hash &* 1_099_511_628_211
+        }
+        return String(format: "%012llx", hash & 0xFFFF_FFFF_FFFF)
     }
 
     // MARK: - Free Public Endpoints
