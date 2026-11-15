@@ -233,6 +233,7 @@ struct FilterSheet: View {
     @Binding var isVoiceAnnouncementEnabled: Bool
     let onJumpToCoordinate: (CLLocationCoordinate2D, String) -> Void
     let onSimulateHotspotAlert: () -> Void
+    var onOpenBugReport: (() -> Void)?
     @Environment(\.dismiss) private var dismiss
 
     @State private var isShowingFirstResetAlert = false
@@ -327,7 +328,18 @@ struct FilterSheet: View {
                     }
                 }
 
-                Section {
+                Section("サポート・設定リセット") {
+                    if let onOpenBugReport {
+                        Button {
+                            dismiss()
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                                onOpenBugReport()
+                            }
+                        } label: {
+                            Label("バグ・不具合・改善要望を報告する", systemImage: "ladybug.fill")
+                        }
+                    }
+
                     Button(role: .destructive) {
                         isShowingFirstResetAlert = true
                     } label: {
