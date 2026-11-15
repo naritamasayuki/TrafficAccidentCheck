@@ -239,7 +239,16 @@ final class TrafficAccidentCheckTests: XCTestCase {
         testDefaults.removePersistentDomain(forName: suiteName)
 
         var customFilter = AccidentFilter()
-        customFilter.targetYear = 2025
+        XCTAssertEqual(customFilter.yearFilter, .recentThreeYears)
+        XCTAssertFalse(customFilter.hasActiveCriteria)
+
+        XCTAssertTrue(YearFilter.recentThreeYears.matches(year: 2025, latestYear: 2025))
+        XCTAssertTrue(YearFilter.recentThreeYears.matches(year: 2024, latestYear: 2025))
+        XCTAssertTrue(YearFilter.recentThreeYears.matches(year: 2023, latestYear: 2025))
+        XCTAssertFalse(YearFilter.recentThreeYears.matches(year: 2022, latestYear: 2025))
+
+        customFilter.yearFilter = .specific(2025)
+        XCTAssertTrue(customFilter.hasActiveCriteria)
         customFilter.severity = .fatalOnly
         customFilter.displayMode = .heatmap
         customFilter.showSNSReports = false

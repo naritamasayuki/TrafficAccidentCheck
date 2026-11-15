@@ -91,6 +91,8 @@ struct ContentView: View {
                 isFollowingUser: $locationManager.isFollowingUser,
                 isProximityAlertEnabled: $locationManager.isProximityAlertEnabled,
                 isVoiceAnnouncementEnabled: $locationManager.isVoiceAnnouncementEnabled,
+                latestYear: dataStore.latestYear,
+                availableYears: dataStore.availableYears,
                 onJumpToCoordinate: { coord, _ in
                     locationManager.isFollowingUser = false
                     jumpToCoordinate(coord)

@@ -48,7 +48,7 @@ final class AdMobService: ObservableObject {
             return
         }
 
-        GADMobileAds.sharedInstance().start { status in
+        MobileAds.shared.start { status in
             let adapterCount = status.adapterStatusesByClassName.count
             AppLogger.ad.info("Google Mobile Ads SDK 初期化完了 (アダプタ数: \(adapterCount), テスト広告モード: \(self.configuration.isUsingTestAds))")
         }
@@ -61,7 +61,7 @@ final class AdMobService: ObservableObject {
     }
 }
 
-/// `GADBannerView` を SwiftUI で表示するための UIViewRepresentable。
+/// `BannerView` を SwiftUI で表示するための UIViewRepresentable。
 struct GADBannerRepresentableView: UIViewRepresentable {
     let adUnitID: String
     let width: CGFloat
@@ -72,17 +72,17 @@ struct GADBannerRepresentableView: UIViewRepresentable {
         Coordinator(parent: self)
     }
 
-    func makeUIView(context: Context) -> GADBannerView {
-        let adSize = GADCurrentOrientationAnchoredAdaptiveBannerAdSizeWithWidth(max(320, width))
-        let bannerView = GADBannerView(adSize: adSize)
+    func makeUIView(context: Context) -> BannerView {
+        let adSize = currentOrientationAnchoredAdaptiveBanner(width: max(320, width))
+        let bannerView = BannerView(adSize: adSize)
         bannerView.adUnitID = adUnitID
         bannerView.delegate = context.coordinator
         bannerView.rootViewController = Self.findRootViewController()
-        bannerView.load(GADRequest())
+        bannerView.load(Request())
         return bannerView
     }
 
-    func updateUIView(_ bannerView: GADBannerView, context: Context) {
+    func updateUIView(_ bannerView: BannerView, context: Context) {
         context.coordinator.parent = self
         if bannerView.rootViewController == nil {
             bannerView.rootViewController = Self.findRootViewController()
@@ -99,14 +99,14 @@ struct GADBannerRepresentableView: UIViewRepresentable {
         return scenes.first?.windows.first?.rootViewController
     }
 
-    final class Coordinator: NSObject, GADBannerViewDelegate {
+    final class Coordinator: NSObject, BannerViewDelegate {
         var parent: GADBannerRepresentableView
 
         init(parent: GADBannerRepresentableView) {
             self.parent = parent
         }
 
-        func bannerViewDidReceiveAd(_ bannerView: GADBannerView) {
+        func bannerViewDidReceiveAd(_ bannerView: BannerView) {
             AppLogger.ad.info("AdMob バナー広告の読み込みに成功しました (UnitID: \(bannerView.adUnitID ?? "-"))")
             Task { @MainActor in
                 parent.isAdLoaded = true
@@ -114,7 +114,7 @@ struct GADBannerRepresentableView: UIViewRepresentable {
             }
         }
 
-        func bannerView(_ bannerView: GADBannerView, didFailToReceiveAdWithError error: Error) {
+        func bannerView(_ bannerView: BannerView, didFailToReceiveAdWithError error: Error) {
             AppLogger.logError(AppLogger.ad, context: "AdMob バナー広告の読み込み失敗", error: error)
             Task { @MainActor in
                 parent.isAdLoaded = false

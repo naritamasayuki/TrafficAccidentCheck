@@ -66,12 +66,53 @@ enum WeatherFilter: String, CaseIterable, Identifiable, Codable, Sendable {
     }
 }
 
+/// 発生年の絞り込み区分。
+enum YearFilter: Equatable, Hashable, Codable, Sendable {
+    /// 直近3年（収録データの最新年から3年分）
+    case recentThreeYears
+    /// 全期間
+    case all
+    /// 特定の1年
+    case specific(UInt16)
+
+    /// 指定された最新年を基準に表示用ラベルを返す。
+    func displayText(latestYear: UInt16) -> String {
+        switch self {
+        case .recentThreeYears:
+            let startYear = latestYear >= 2 ? latestYear - 2 : latestYear
+            return "直近3年（\(startYear)〜\(latestYear)年）"
+        case .all:
+            return "すべて（全期間）"
+        case .specific(let year):
+            return "\(year)年のみ"
+        }
+    }
+
+    /// 指定された年がこのフィルタ条件に合致するか判定する。
+    func matches(year: UInt16, latestYear: UInt16) -> Bool {
+        switch self {
+        case .recentThreeYears:
+            let minYear = latestYear >= 2 ? latestYear - 2 : 0
+            return year >= minYear && year <= latestYear
+        case .all:
+            return true
+        case .specific(let target):
+            return year == target
+        }
+    }
+}
+
 /// 交通事故データの絞り込み条件一式。
 struct AccidentFilter: Equatable, Codable, Sendable {
-    static let storageKey = "TrafficAccidentCheck.SavedFilter.v1"
+    static let storageKey = "TrafficAccidentCheck.SavedFilter.v2"
 
-    /// 対象年（nil の場合は全年度）
-    var targetYear: UInt16? = nil
+    /// ストアが空の場合などに用いる基準年のフォールバック値（現在年）。
+    static var defaultReferenceYear: UInt16 {
+        UInt16(Calendar.current.component(.year, from: Date()))
+    }
+
+    /// 対象年フィルタ（初期表示は直近3年）
+    var yearFilter: YearFilter = .recentThreeYears
     /// 重大度（すべて / 死亡のみ / 負傷のみ）
     var severity: SeverityFilter = .all
     /// 昼夜区分
@@ -114,12 +155,12 @@ struct AccidentFilter: Equatable, Codable, Sendable {
 
     /// フィルタが初期状態から変更されているかどうか
     var hasActiveCriteria: Bool {
-        targetYear != nil || severity != .all || timeOfDay != .all || accidentType != .all || weather != .all
+        yearFilter != .recentThreeYears || severity != .all || timeOfDay != .all || accidentType != .all || weather != .all
     }
 
     /// 指定された公式事故レコードがこのフィルタ条件に合致するか判定する。
-    func matches(_ record: AccidentRecord) -> Bool {
-        if let year = targetYear, record.year != year {
+    func matches(_ record: AccidentRecord, latestYear: UInt16 = AccidentFilter.defaultReferenceYear) -> Bool {
+        guard yearFilter.matches(year: record.year, latestYear: latestYear) else {
             return false
         }
         switch severity {
@@ -199,7 +240,7 @@ struct BugReportDraft: Equatable, Codable, Sendable {
         ]
 
         if includeDiagnostics {
-            let yearStr = filter.targetYear.map { "\($0)年" } ?? "すべて"
+            let yearStr = filter.yearFilter.displayText(latestYear: AccidentFilter.defaultReferenceYear)
             let mapEngine = isGoogleMapsConfigured ? "Google Maps SDK" : "MapKit互換モード"
             lines.append(contentsOf: [
                 "",

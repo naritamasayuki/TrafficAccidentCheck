@@ -231,6 +231,8 @@ struct FilterSheet: View {
     @Binding var isFollowingUser: Bool
     @Binding var isProximityAlertEnabled: Bool
     @Binding var isVoiceAnnouncementEnabled: Bool
+    var latestYear: UInt16 = AccidentFilter.defaultReferenceYear
+    var availableYears: [UInt16] = []
     let onJumpToCoordinate: (CLLocationCoordinate2D, String) -> Void
     let onSimulateHotspotAlert: () -> Void
     var onOpenBugReport: (() -> Void)?
@@ -282,10 +284,14 @@ struct FilterSheet: View {
                 }
 
                 Section("公式オープンデータの絞り込み") {
-                    Picker("発生年", selection: $filter.targetYear) {
-                        Text("すべて（2024〜2025年）").tag(UInt16?.none)
-                        Text("2025年のみ").tag(UInt16?.some(2025))
-                        Text("2024年のみ").tag(UInt16?.some(2024))
+                    Picker("発生年", selection: $filter.yearFilter) {
+                        Text(YearFilter.recentThreeYears.displayText(latestYear: latestYear))
+                            .tag(YearFilter.recentThreeYears)
+                        Text(YearFilter.all.displayText(latestYear: latestYear))
+                            .tag(YearFilter.all)
+                        ForEach(availableYears, id: \.self) { year in
+                            Text("\(year)年のみ").tag(YearFilter.specific(year))
+                        }
                     }
 
                     Picker("事故内容（重大度）", selection: $filter.severity) {

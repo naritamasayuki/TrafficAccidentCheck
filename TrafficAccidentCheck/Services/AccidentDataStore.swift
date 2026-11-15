@@ -47,6 +47,10 @@ final class AccidentDataStore: @unchecked Sendable {
     private let data: Data
     /// 総レコード件数
     let totalCount: Int
+    /// 収録データ内の最新年（空ストアの場合は現在年）
+    let latestYear: UInt16
+    /// 収録データ内に存在する発生年の一覧（降順）
+    let availableYears: [UInt16]
 
     /// バンドル内の `accidents.bin` から初期化する。失敗時はエラーログを記録して空ストアにフォールバック可能。
     convenience init(resourceName: String = "accidents", fileExtension: String = "bin", bundle: Bundle = .main) throws {
@@ -108,12 +112,30 @@ final class AccidentDataStore: @unchecked Sendable {
 
         self.data = data
         self.totalCount = rawCount
-        AppLogger.data.info("事故データストア初期化完了: 総件数 \(rawCount) 件")
+
+        var yearSet: Set<UInt16> = []
+        var maxYear: UInt16 = 0
+        data.withUnsafeBytes { rawBuffer in
+            guard let base = rawBuffer.baseAddress?.assumingMemoryBound(to: UInt8.self) else { return }
+            for idx in 0..<rawCount {
+                let ptr = base.advanced(by: Self.headerSize + idx * Self.recordSize)
+                let year = UInt16(ptr[8]) | (UInt16(ptr[9]) << 8)
+                if year > 0 {
+                    yearSet.insert(year)
+                    if year > maxYear { maxYear = year }
+                }
+            }
+        }
+        self.availableYears = yearSet.sorted(by: >)
+        self.latestYear = maxYear > 0 ? maxYear : AccidentFilter.defaultReferenceYear
+        AppLogger.data.info("事故データストア初期化完了: 総件数 \(rawCount) 件 (最新年: \(self.latestYear))")
     }
 
     private init(empty: Bool) {
         self.data = Data()
         self.totalCount = 0
+        self.latestYear = AccidentFilter.defaultReferenceYear
+        self.availableYears = []
     }
 
     /// 空のフォールバック用ストアを安全に生成する（強制アンラップ不使用）。
@@ -162,7 +184,7 @@ final class AccidentDataStore: @unchecked Sendable {
                 let lonE6 = Self.readInt32LE(ptr: ptr, offset: 4)
                 if lonE6 < minLonE6 || lonE6 > maxLonE6 { continue }
 
-                if !Self.matchesFilterRaw(ptr: ptr, filter: filter) {
+                if !Self.matchesFilterRaw(ptr: ptr, filter: filter, latestYear: latestYear) {
                     continue
                 }
                 matchedIndices.append(idx)
@@ -247,10 +269,10 @@ final class AccidentDataStore: @unchecked Sendable {
     // MARK: - Private Binary Helpers
 
     @inline(__always)
-    private static func matchesFilterRaw(ptr: UnsafePointer<UInt8>, filter: AccidentFilter) -> Bool {
-        if let targetYear = filter.targetYear {
-            let year = UInt16(ptr[8]) | (UInt16(ptr[9]) << 8)
-            if year != targetYear { return false }
+    private static func matchesFilterRaw(ptr: UnsafePointer<UInt8>, filter: AccidentFilter, latestYear: UInt16) -> Bool {
+        let year = UInt16(ptr[8]) | (UInt16(ptr[9]) << 8)
+        if !filter.yearFilter.matches(year: year, latestYear: latestYear) {
+            return false
         }
         let isFatal = (ptr[14] == 1 || ptr[15] > 0)
         switch filter.severity {
