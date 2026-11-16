@@ -133,6 +133,12 @@ struct AccidentFilter: Equatable, Codable, Sendable {
     var yearFilter: YearFilter = .recentThreeYears
     /// 周辺危険度診断の検索半径（初期値は半径100m）
     var diagnosisRadius: DiagnosisRadiusFilter = .r100
+    /// 色分けごとの表示フラグ（赤: 死亡事故）
+    var showFatalAccidents: Bool = true
+    /// 色分けごとの表示フラグ（橙: 複数負傷事故）
+    var showMultipleInjuryAccidents: Bool = true
+    /// 色分けごとの表示フラグ（黄: 負傷事故1名）
+    var showSingleInjuryAccidents: Bool = true
     /// 重大度（すべて / 死亡のみ / 負傷のみ）
     var severity: SeverityFilter = .all
     /// 昼夜区分
@@ -173,10 +179,31 @@ struct AccidentFilter: Equatable, Codable, Sendable {
         }
     }
 
+    /// 指定された事故の程度区分が現在表示対象かどうか
+    func isVisible(_ level: AccidentSeverityLevel) -> Bool {
+        switch level {
+        case .fatal: return showFatalAccidents
+        case .multipleInjury: return showMultipleInjuryAccidents
+        case .singleInjury: return showSingleInjuryAccidents
+        }
+    }
+
+    /// 指定された事故の程度区分の表示/非表示を切り替える
+    mutating func toggleVisibility(for level: AccidentSeverityLevel) {
+        switch level {
+        case .fatal: showFatalAccidents.toggle()
+        case .multipleInjury: showMultipleInjuryAccidents.toggle()
+        case .singleInjury: showSingleInjuryAccidents.toggle()
+        }
+    }
+
     /// フィルタが初期状態から変更されているかどうか
     var hasActiveCriteria: Bool {
         yearFilter != .recentThreeYears ||
             diagnosisRadius != .r100 ||
+            !showFatalAccidents ||
+            !showMultipleInjuryAccidents ||
+            !showSingleInjuryAccidents ||
             severity != .all ||
             timeOfDay != .all ||
             accidentType != .all ||
@@ -186,6 +213,9 @@ struct AccidentFilter: Equatable, Codable, Sendable {
     /// 指定された公式事故レコードがこのフィルタ条件に合致するか判定する。
     func matches(_ record: AccidentRecord, latestYear: UInt16 = AccidentFilter.defaultReferenceYear) -> Bool {
         guard yearFilter.matches(year: record.year, latestYear: latestYear) else {
+            return false
+        }
+        guard isVisible(record.severityLevel) else {
             return false
         }
         switch severity {

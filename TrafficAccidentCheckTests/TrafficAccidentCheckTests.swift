@@ -317,4 +317,63 @@ final class TrafficAccidentCheckTests: XCTestCase {
             )
         )
     }
+
+    // MARK: - 6. 事故の程度による色分け・表示/非表示フィルタテスト
+
+    func testSeverityLevelAndColorVisibilityFilter() {
+        let fatalRecord = makeSampleRecord(id: 1, severityCode: 1, deaths: 1, injuries: 0)
+        let multiInjuryRecord = makeSampleRecord(id: 2, severityCode: 2, deaths: 0, injuries: 2)
+        let singleInjuryRecord = makeSampleRecord(id: 3, severityCode: 2, deaths: 0, injuries: 1)
+
+        XCTAssertEqual(fatalRecord.severityLevel, .fatal)
+        XCTAssertEqual(multiInjuryRecord.severityLevel, .multipleInjury)
+        XCTAssertEqual(singleInjuryRecord.severityLevel, .singleInjury)
+
+        var filter = AccidentFilter()
+        XCTAssertTrue(filter.matches(fatalRecord, latestYear: 2025))
+        XCTAssertTrue(filter.matches(multiInjuryRecord, latestYear: 2025))
+        XCTAssertTrue(filter.matches(singleInjuryRecord, latestYear: 2025))
+
+        filter.toggleVisibility(for: .multipleInjury)
+        XCTAssertFalse(filter.showMultipleInjuryAccidents)
+        XCTAssertTrue(filter.hasActiveCriteria)
+        XCTAssertTrue(filter.matches(fatalRecord, latestYear: 2025))
+        XCTAssertFalse(filter.matches(multiInjuryRecord, latestYear: 2025))
+        XCTAssertTrue(filter.matches(singleInjuryRecord, latestYear: 2025))
+
+        filter.toggleVisibility(for: .singleInjury)
+        XCTAssertFalse(filter.matches(singleInjuryRecord, latestYear: 2025))
+        XCTAssertTrue(filter.matches(fatalRecord, latestYear: 2025))
+    }
+
+    private func makeSampleRecord(id: Int, severityCode: UInt8, deaths: UInt8, injuries: UInt8) -> AccidentRecord {
+        AccidentRecord(
+            id: id,
+            latitude: 35.6812,
+            longitude: 139.7671,
+            year: 2025,
+            month: 1,
+            day: 1,
+            hour: 12,
+            minute: 0,
+            severityCode: severityCode,
+            deaths: deaths,
+            injuries: injuries,
+            weatherCode: 1,
+            dayNightCode: 12,
+            roadSurfaceCode: 1,
+            roadShapeCode: 1,
+            signalCode: 1,
+            accidentTypeCode: 21,
+            weekdayCode: 1,
+            holidayCode: 3,
+            partyACode: 3,
+            partyBCode: 3,
+            ageACode: 35,
+            ageBCode: 45,
+            prefectureCode: 13,
+            injuryACode: 2,
+            injuryBCode: 4
+        )
+    }
 }

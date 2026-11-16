@@ -283,6 +283,27 @@ struct FilterSheet: View {
                     }
                 }
 
+                Section("事故の程度（色分け）ごとの表示") {
+                    Toggle(isOn: $filter.showFatalAccidents) {
+                        HStack(spacing: 8) {
+                            Circle().fill(Color.red).frame(width: 12, height: 12)
+                            Text("死亡事故（赤）")
+                        }
+                    }
+                    Toggle(isOn: $filter.showMultipleInjuryAccidents) {
+                        HStack(spacing: 8) {
+                            Circle().fill(Color.orange).frame(width: 12, height: 12)
+                            Text("複数負傷・2名以上（橙）")
+                        }
+                    }
+                    Toggle(isOn: $filter.showSingleInjuryAccidents) {
+                        HStack(spacing: 8) {
+                            Circle().fill(Color.yellow).frame(width: 12, height: 12)
+                            Text("負傷・1名（黄）")
+                        }
+                    }
+                }
+
                 Section("公式オープンデータの絞り込み") {
                     Picker("発生年", selection: $filter.yearFilter) {
                         Text(YearFilter.recentThreeYears.displayText(latestYear: latestYear))

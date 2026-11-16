@@ -1,6 +1,24 @@
 import CoreLocation
 import Foundation
 
+/// 事故の程度区分（色分け・色ごとの表示切替用）。
+enum AccidentSeverityLevel: String, CaseIterable, Identifiable, Codable, Sendable {
+    case fatal = "死亡事故"
+    case multipleInjury = "複数負傷（2名以上）"
+    case singleInjury = "負傷（1名）"
+
+    var id: String { rawValue }
+
+    /// 地図下部の凡例ボタン向けの短縮ラベル
+    var shortLabel: String {
+        switch self {
+        case .fatal: return "死亡"
+        case .multipleInjury: return "複数負傷"
+        case .singleInjury: return "負傷"
+        }
+    }
+}
+
 /// 警察庁オープンデータ（本票）の1件分の交通事故レコード。
 struct AccidentRecord: Identifiable, Equatable, Sendable {
     /// レコードの一意識別子（バイナリ内のインデックス）
@@ -64,6 +82,13 @@ struct AccidentRecord: Identifiable, Equatable, Sendable {
     /// 死亡事故かどうか
     var isFatal: Bool {
         severityCode == 1 || deaths > 0
+    }
+
+    /// 事故の程度区分（死亡 / 複数負傷 / 単数負傷）
+    var severityLevel: AccidentSeverityLevel {
+        if isFatal { return .fatal }
+        if injuries >= 2 { return .multipleInjury }
+        return .singleInjury
     }
 
     /// 夜間発生かどうか（21:夜-暮, 22:夜-夜, 23:夜-明）

@@ -209,8 +209,17 @@ struct GoogleMapContainerView: UIViewRepresentable {
                 let rec = item.record
                 marker.title = rec.summaryTitle
                 marker.snippet = rec.formattedDateTime
-                marker.icon = GMSMarker.markerImage(with: rec.isFatal ? .systemRed : .systemOrange)
-                marker.zIndex = rec.isFatal ? 50 : 10
+                switch rec.severityLevel {
+                case .fatal:
+                    marker.icon = GMSMarker.markerImage(with: .systemRed)
+                    marker.zIndex = 50
+                case .multipleInjury:
+                    marker.icon = GMSMarker.markerImage(with: .systemOrange)
+                    marker.zIndex = 20
+                case .singleInjury:
+                    marker.icon = GMSMarker.markerImage(with: .systemYellow)
+                    marker.zIndex = 10
+                }
             }
         }
 
@@ -319,19 +328,36 @@ struct FallbackMapKitView: View {
 
             // 公式事故データ（ピン表示またはヒートマップサークル）
             ForEach(records.prefix(displayMode == .heatmap ? 450 : 300)) { rec in
+                let markerColor: Color = {
+                    switch rec.severityLevel {
+                    case .fatal: return .red
+                    case .multipleInjury: return .orange
+                    case .singleInjury: return .yellow
+                    }
+                }()
                 if displayMode == .heatmap {
-                    MapCircle(center: rec.coordinate, radius: rec.isFatal ? 120 : 65)
-                        .foregroundStyle((rec.isFatal ? Color.red : Color.orange).opacity(rec.isFatal ? 0.35 : 0.18))
+                    let radius: Double = rec.severityLevel == .fatal ? 120 : (rec.severityLevel == .multipleInjury ? 85 : 60)
+                    let opacity: Double = rec.severityLevel == .fatal ? 0.35 : (rec.severityLevel == .multipleInjury ? 0.24 : 0.18)
+                    MapCircle(center: rec.coordinate, radius: radius)
+                        .foregroundStyle(markerColor.opacity(opacity))
                 } else {
-                    Annotation(rec.isFatal ? "死亡" : "負傷", coordinate: rec.coordinate) {
+                    Annotation(rec.severityLevel.shortLabel, coordinate: rec.coordinate) {
                         Button {
                             onSelectAccident(rec)
                         } label: {
-                            Image(systemName: rec.isFatal ? "xmark.octagon.fill" : "exclamationmark.triangle.fill")
+                            let symbolName: String = {
+                                switch rec.severityLevel {
+                                case .fatal: return "xmark.octagon.fill"
+                                case .multipleInjury: return "exclamationmark.triangle.fill"
+                                case .singleInjury: return "exclamationmark.circle.fill"
+                                }
+                            }()
+                            let fgColor: Color = rec.severityLevel == .singleInjury ? .black : .white
+                            Image(systemName: symbolName)
                                 .font(.system(size: rec.isFatal ? 18 : 13, weight: .bold))
-                                .foregroundStyle(.white)
+                                .foregroundStyle(fgColor)
                                 .padding(rec.isFatal ? 5 : 3.5)
-                                .background(rec.isFatal ? Color.red : Color.orange, in: Circle())
+                                .background(markerColor, in: Circle())
                                 .shadow(radius: 2)
                         }
                     }

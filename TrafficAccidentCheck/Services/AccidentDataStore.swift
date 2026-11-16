@@ -275,6 +275,14 @@ final class AccidentDataStore: @unchecked Sendable {
             return false
         }
         let isFatal = (ptr[14] == 1 || ptr[15] > 0)
+        if isFatal {
+            if !filter.showFatalAccidents { return false }
+        } else if ptr[16] >= 2 {
+            if !filter.showMultipleInjuryAccidents { return false }
+        } else {
+            if !filter.showSingleInjuryAccidents { return false }
+        }
+
         switch filter.severity {
         case .all: break
         case .fatalOnly: if !isFatal { return false }

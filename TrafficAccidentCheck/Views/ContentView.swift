@@ -380,27 +380,74 @@ extension ContentView {
     }
 
     private var bottomStatusLegendBar: some View {
-        HStack(spacing: 12) {
-            HStack(spacing: 4) {
-                Circle().fill(Color.red).frame(width: 9, height: 9)
-                Text("死亡事故")
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 8) {
+                legendToggleChip(
+                    label: "死亡",
+                    color: .red,
+                    isActive: filter.showFatalAccidents
+                ) {
+                    filter.toggleVisibility(for: .fatal)
+                }
+                legendToggleChip(
+                    label: "複数負傷",
+                    color: .orange,
+                    isActive: filter.showMultipleInjuryAccidents
+                ) {
+                    filter.toggleVisibility(for: .multipleInjury)
+                }
+                legendToggleChip(
+                    label: "負傷(1名)",
+                    color: .yellow,
+                    isActive: filter.showSingleInjuryAccidents
+                ) {
+                    filter.toggleVisibility(for: .singleInjury)
+                }
+                legendToggleChip(
+                    label: "SNS",
+                    color: .purple,
+                    isActive: filter.showSNSReports
+                ) {
+                    filter.showSNSReports.toggle()
+                }
+                Spacer(minLength: 4)
+                Text("\(visibleRecords.count)/\(totalMatchedInBox)件")
+                    .monospacedDigit()
+                    .foregroundStyle(.secondary)
             }
-            HStack(spacing: 4) {
-                Circle().fill(Color.orange).frame(width: 9, height: 9)
-                Text("負傷事故")
-            }
-            HStack(spacing: 4) {
-                Circle().fill(Color.purple).frame(width: 9, height: 9)
-                Text("出典:SNS(未確認)")
-            }
-            Spacer()
-            Text("表示 \(visibleRecords.count)/\(totalMatchedInBox)件 (全国\(dataStore.totalCount.formatted())件)")
-                .monospacedDigit()
         }
         .font(.caption2.weight(.medium))
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 7)
         .background(.ultraThinMaterial, in: Capsule())
+    }
+
+    private func legendToggleChip(
+        label: String,
+        color: Color,
+        isActive: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: 4) {
+                Circle()
+                    .fill(isActive ? color : Color.gray.opacity(0.35))
+                    .overlay(Circle().stroke(color, lineWidth: isActive ? 0 : 1))
+                    .frame(width: 9, height: 9)
+                Text(label)
+                    .strikethrough(!isActive)
+                    .foregroundStyle(isActive ? .primary : .secondary)
+            }
+            .padding(.horizontal, 6)
+            .padding(.vertical, 3)
+            .background(
+                isActive ? color.opacity(0.14) : Color.clear,
+                in: Capsule()
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(label)の表示切り替え")
+        .accessibilityValue(isActive ? "表示中" : "非表示")
     }
 
     private func initializeAppData() async {
