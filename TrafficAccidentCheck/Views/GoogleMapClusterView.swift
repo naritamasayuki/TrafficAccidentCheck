@@ -70,6 +70,7 @@ struct GoogleMapContainerView: UIViewRepresentable {
         private var heatmapLayer: GMUHeatmapTileLayer?
         private var snsMarkers: [GMSMarker] = []
         private var hotspotCircles: [GMSCircle] = []
+        private var hotspotMarkers: [GMSMarker] = []
         private var lastRenderedRecordIDs: [Int] = []
         private var lastRenderedSNSIDs: [String] = []
         private var lastDisplayMode: MapDisplayMode?
@@ -169,18 +170,44 @@ struct GoogleMapContainerView: UIViewRepresentable {
                     }
                 }
 
-                // ホットスポット（事故多発150m圏）のサークルを更新
+                // ホットスポット（事故多発150m圏）を二重リング＋警告バッジで強調表示
                 for circle in hotspotCircles { circle.map = nil }
                 hotspotCircles.removeAll()
-                for spot in hotspots.prefix(8) {
-                    let circle = GMSCircle(position: spot.coordinate, radius: 150)
-                    circle.fillColor = (spot.fatalCount > 0 ? UIColor.systemRed : UIColor.systemOrange)
-                        .withAlphaComponent(0.14)
-                    circle.strokeColor = (spot.fatalCount > 0 ? UIColor.systemRed : UIColor.systemOrange)
-                        .withAlphaComponent(0.6)
-                    circle.strokeWidth = 1.5
-                    circle.map = mapView
-                    hotspotCircles.append(circle)
+                for marker in hotspotMarkers { marker.map = nil }
+                hotspotMarkers.removeAll()
+
+                for spot in hotspots.prefix(10) {
+                    let baseColor = spot.fatalCount > 0
+                        ? UIColor(red: 0.85, green: 0.05, blue: 0.12, alpha: 1.0)
+                        : UIColor(red: 0.95, green: 0.38, blue: 0.02, alpha: 1.0)
+
+                    // 外側警戒リング（150m）
+                    let outerCircle = GMSCircle(position: spot.coordinate, radius: 150)
+                    outerCircle.fillColor = baseColor.withAlphaComponent(0.22)
+                    outerCircle.strokeColor = baseColor.withAlphaComponent(0.95)
+                    outerCircle.strokeWidth = 3.0
+                    outerCircle.zIndex = 30
+                    outerCircle.map = mapView
+                    hotspotCircles.append(outerCircle)
+
+                    // 内側コア強調リング（65m）
+                    let innerCircle = GMSCircle(position: spot.coordinate, radius: 65)
+                    innerCircle.fillColor = baseColor.withAlphaComponent(0.32)
+                    innerCircle.strokeColor = UIColor.white.withAlphaComponent(0.9)
+                    innerCircle.strokeWidth = 2.0
+                    innerCircle.zIndex = 31
+                    innerCircle.map = mapView
+                    hotspotCircles.append(innerCircle)
+
+                    // 中心の「事故多発」警告バッジマーカー
+                    let badgeMarker = GMSMarker(position: spot.coordinate)
+                    badgeMarker.title = "⚠️ 事故多発ゾーン（\(spot.accidentCount)件）"
+                    badgeMarker.snippet = "半径150m内で\(spot.accidentCount)件発生（うち死亡\(spot.fatalCount)件）"
+                    badgeMarker.iconView = Self.makeHotspotBadgeView(for: spot, color: baseColor)
+                    badgeMarker.groundAnchor = CGPoint(x: 0.5, y: 0.5)
+                    badgeMarker.zIndex = 200
+                    badgeMarker.map = mapView
+                    hotspotMarkers.append(badgeMarker)
                 }
             }
 
@@ -200,6 +227,36 @@ struct GoogleMapContainerView: UIViewRepresentable {
                     snsMarkers.append(marker)
                 }
             }
+        }
+
+        private static func makeHotspotBadgeView(for spot: AccidentHotspot, color: UIColor) -> UIView {
+            let label = UILabel()
+            label.text = "⚠️ 多発 \(spot.accidentCount)件"
+            label.font = UIFont.systemFont(ofSize: 11, weight: .heavy)
+            label.textColor = .white
+            label.textAlignment = .center
+            label.sizeToFit()
+
+            let paddingX: CGFloat = 9
+            let paddingY: CGFloat = 5
+            let container = UIView(frame: CGRect(
+                x: 0,
+                y: 0,
+                width: label.bounds.width + paddingX * 2,
+                height: label.bounds.height + paddingY * 2
+            ))
+            container.backgroundColor = color
+            container.layer.cornerRadius = container.bounds.height / 2
+            container.layer.borderColor = UIColor.white.cgColor
+            container.layer.borderWidth = 2.0
+            container.layer.shadowColor = UIColor.black.cgColor
+            container.layer.shadowOpacity = 0.35
+            container.layer.shadowOffset = CGSize(width: 0, height: 2)
+            container.layer.shadowRadius = 3
+
+            label.center = CGPoint(x: container.bounds.midX, y: container.bounds.midY)
+            container.addSubview(label)
+            return container
         }
 
         // MARK: - GMUClusterRendererDelegate
@@ -319,11 +376,30 @@ struct FallbackMapKitView: View {
                 }
             }
 
-            // ホットスポット（事故多発エリア）サークル
+            // ホットスポット（事故多発エリア）を二重リング＋警告バッジで強調表示
             ForEach(hotspots.prefix(10)) { spot in
+                let spotColor: Color = spot.fatalCount > 0 ? Color(red: 0.85, green: 0.05, blue: 0.12) : .orange
                 MapCircle(center: spot.coordinate, radius: 150)
-                    .foregroundStyle((spot.fatalCount > 0 ? Color.red : Color.orange).opacity(0.22))
-                    .stroke(spot.fatalCount > 0 ? Color.red : Color.orange, lineWidth: 1.5)
+                    .foregroundStyle(spotColor.opacity(0.24))
+                    .stroke(spotColor, lineWidth: 3.0)
+                MapCircle(center: spot.coordinate, radius: 65)
+                    .foregroundStyle(spotColor.opacity(0.32))
+                    .stroke(Color.white.opacity(0.9), lineWidth: 1.5)
+                Annotation("多発 \(spot.accidentCount)件", coordinate: spot.coordinate) {
+                    HStack(spacing: 3) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.caption2.bold())
+                        Text("多発 \(spot.accidentCount)件")
+                            .font(.caption2.weight(.heavy))
+                            .monospacedDigit()
+                    }
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(spotColor, in: Capsule())
+                    .overlay(Capsule().stroke(Color.white, lineWidth: 2))
+                    .shadow(color: .black.opacity(0.35), radius: 3, y: 2)
+                }
             }
 
             // 公式事故データ（ピン表示またはヒートマップサークル）
