@@ -191,7 +191,9 @@ extension ContentView {
 
                     VStack(alignment: .leading, spacing: 2) {
                         HStack(spacing: 6) {
-                            Text("周辺500m危険度: \(assessment.level.rawValue)")
+                            let radiusInt = Int(assessment.radiusMeters)
+                            let radiusText = radiusInt >= 1000 ? "\(radiusInt / 1000)km" : "\(radiusInt)m"
+                            Text("周辺\(radiusText)危険度: \(assessment.level.rawValue)")
                                 .font(.subheadline.bold())
                             Text("(\(assessment.score)/100)")
                                 .font(.caption.monospacedDigit().bold())
@@ -429,7 +431,8 @@ extension ContentView {
         totalMatchedInBox = queryResult.totalMatchedInBox
 
         let targetCoord = locationManager.userCoordinate ?? cameraCenter
-        let nearbyRecords = dataStore.recordsNear(coordinate: targetCoord, radiusMeters: 500.0, filter: filter)
+        let radius = filter.diagnosisRadius.meters
+        let nearbyRecords = dataStore.recordsNear(coordinate: targetCoord, radiusMeters: radius, filter: filter)
         let hotspotSource = nearbyRecords.isEmpty ? queryResult.records : (queryResult.records + nearbyRecords)
         let detectedHotspots = DangerAnalyzer.detectHotspots(from: hotspotSource, minimumCount: 3)
         hotspots = detectedHotspots
@@ -439,7 +442,7 @@ extension ContentView {
             center: targetCoord,
             accidentsInRadius: nearbyRecords,
             allSNSReports: snsReports,
-            radiusMeters: 500.0
+            radiusMeters: radius
         )
     }
 

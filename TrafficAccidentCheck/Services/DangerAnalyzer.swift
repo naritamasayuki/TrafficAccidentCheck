@@ -73,7 +73,7 @@ enum DangerAnalyzer {
         center: CLLocationCoordinate2D,
         accidentsInRadius: [AccidentRecord],
         allSNSReports: [SNSAccidentReport],
-        radiusMeters: Double = 500.0
+        radiusMeters: Double = 100.0
     ) -> AreaDangerAssessment {
         let total = accidentsInRadius.count
         let fatalCount = accidentsInRadius.filter(\.isFatal).count

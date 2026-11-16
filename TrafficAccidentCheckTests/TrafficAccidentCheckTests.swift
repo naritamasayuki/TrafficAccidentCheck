@@ -240,6 +240,8 @@ final class TrafficAccidentCheckTests: XCTestCase {
 
         var customFilter = AccidentFilter()
         XCTAssertEqual(customFilter.yearFilter, .recentThreeYears)
+        XCTAssertEqual(customFilter.diagnosisRadius, .r100)
+        XCTAssertEqual(customFilter.diagnosisRadius.meters, 100.0, accuracy: 0.001)
         XCTAssertFalse(customFilter.hasActiveCriteria)
 
         XCTAssertTrue(YearFilter.recentThreeYears.matches(year: 2025, latestYear: 2025))
@@ -248,6 +250,7 @@ final class TrafficAccidentCheckTests: XCTestCase {
         XCTAssertFalse(YearFilter.recentThreeYears.matches(year: 2022, latestYear: 2025))
 
         customFilter.yearFilter = .specific(2025)
+        customFilter.diagnosisRadius = .r500
         XCTAssertTrue(customFilter.hasActiveCriteria)
         customFilter.severity = .fatalOnly
         customFilter.displayMode = .heatmap

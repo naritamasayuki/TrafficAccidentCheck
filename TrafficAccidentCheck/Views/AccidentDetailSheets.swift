@@ -317,6 +317,12 @@ struct FilterSheet: View {
                             Text(item.rawValue).tag(item)
                         }
                     }
+
+                    Picker("周辺危険度の診断範囲", selection: $filter.diagnosisRadius) {
+                        ForEach(DiagnosisRadiusFilter.allCases) { item in
+                            Text(item.displayText).tag(item)
+                        }
+                    }
                 }
 
                 Section("主要都市へジャンプ") {

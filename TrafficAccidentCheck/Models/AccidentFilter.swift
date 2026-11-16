@@ -102,9 +102,27 @@ enum YearFilter: Equatable, Hashable, Codable, Sendable {
     }
 }
 
+/// 周辺危険度診断の対象半径区分（初期値は100m）。
+enum DiagnosisRadiusFilter: Int, CaseIterable, Identifiable, Codable, Sendable {
+    case r100 = 100
+    case r300 = 300
+    case r500 = 500
+    case r1000 = 1000
+
+    var id: Int { rawValue }
+
+    /// メートル単位の半径値
+    var meters: Double { Double(rawValue) }
+
+    /// 表示用ラベル
+    var displayText: String {
+        rawValue >= 1000 ? "半径\(rawValue / 1000)km" : "半径\(rawValue)m"
+    }
+}
+
 /// 交通事故データの絞り込み条件一式。
 struct AccidentFilter: Equatable, Codable, Sendable {
-    static let storageKey = "TrafficAccidentCheck.SavedFilter.v2"
+    static let storageKey = "TrafficAccidentCheck.SavedFilter.v3"
 
     /// ストアが空の場合などに用いる基準年のフォールバック値（現在年）。
     static var defaultReferenceYear: UInt16 {
@@ -113,6 +131,8 @@ struct AccidentFilter: Equatable, Codable, Sendable {
 
     /// 対象年フィルタ（初期表示は直近3年）
     var yearFilter: YearFilter = .recentThreeYears
+    /// 周辺危険度診断の検索半径（初期値は半径100m）
+    var diagnosisRadius: DiagnosisRadiusFilter = .r100
     /// 重大度（すべて / 死亡のみ / 負傷のみ）
     var severity: SeverityFilter = .all
     /// 昼夜区分
@@ -155,7 +175,12 @@ struct AccidentFilter: Equatable, Codable, Sendable {
 
     /// フィルタが初期状態から変更されているかどうか
     var hasActiveCriteria: Bool {
-        yearFilter != .recentThreeYears || severity != .all || timeOfDay != .all || accidentType != .all || weather != .all
+        yearFilter != .recentThreeYears ||
+            diagnosisRadius != .r100 ||
+            severity != .all ||
+            timeOfDay != .all ||
+            accidentType != .all ||
+            weather != .all
     }
 
     /// 指定された公式事故レコードがこのフィルタ条件に合致するか判定する。
@@ -248,7 +273,7 @@ struct BugReportDraft: Equatable, Codable, Sendable {
                 "・アプリバージョン: \(appVersion)",
                 "・OS環境: \(osVersion)",
                 "・マップ描画モード: \(mapEngine) / \(filter.displayMode.rawValue)",
-                "・フィルタ設定: 年度=\(yearStr), 重大度=\(filter.severity.rawValue), 時間帯=\(filter.timeOfDay.rawValue)",
+                "・フィルタ設定: 年度=\(yearStr), 診断半径=\(filter.diagnosisRadius.displayText), 重大度=\(filter.severity.rawValue), 時間帯=\(filter.timeOfDay.rawValue)",
                 "・SNS速報表示: \(filter.showSNSReports ? "ON" : "OFF")"
             ])
         }
