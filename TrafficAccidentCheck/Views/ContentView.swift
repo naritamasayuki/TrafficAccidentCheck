@@ -20,14 +20,14 @@ struct ContentView: View {
     @State private var lastSNSUpdatedText: String = "同梱データ読込済"
 
     @State private var cameraCenter = LocationAndAlertManager.defaultCoordinate
-    @State private var cameraZoom: Float = 15.0
+    @State private var cameraZoom: Float = 17.5
     @State private var cameraMoveTrigger: Int = 0
     @State private var hasCenteredOnInitialUserLocation = false
     @State private var currentBoundingBox = CoordinateBoundingBox(
-        minLatitude: 35.660,
-        maxLatitude: 35.705,
-        minLongitude: 139.740,
-        maxLongitude: 139.795
+        minLatitude: LocationAndAlertManager.defaultCoordinate.latitude - 0.00125,
+        maxLatitude: LocationAndAlertManager.defaultCoordinate.latitude + 0.00125,
+        minLongitude: LocationAndAlertManager.defaultCoordinate.longitude - 0.00125,
+        maxLongitude: LocationAndAlertManager.defaultCoordinate.longitude + 0.00125
     )
 
     @State private var dangerAssessment: AreaDangerAssessment?
@@ -507,25 +507,26 @@ extension ContentView {
 
     private func followUserCoordinate(_ coord: CLLocationCoordinate2D) {
         cameraCenter = coord
+        cameraZoom = 17.5
         cameraMoveTrigger += 1
         currentBoundingBox = CoordinateBoundingBox(
-            minLatitude: coord.latitude - 0.018,
-            maxLatitude: coord.latitude + 0.018,
-            minLongitude: coord.longitude - 0.018,
-            maxLongitude: coord.longitude + 0.018
+            minLatitude: coord.latitude - 0.00125,
+            maxLatitude: coord.latitude + 0.00125,
+            minLongitude: coord.longitude - 0.00125,
+            maxLongitude: coord.longitude + 0.00125
         )
         refreshMapData()
     }
 
     private func jumpToCoordinate(_ coord: CLLocationCoordinate2D) {
         cameraCenter = coord
-        cameraZoom = 14.5
+        cameraZoom = 17.5
         cameraMoveTrigger += 1
         currentBoundingBox = CoordinateBoundingBox(
-            minLatitude: coord.latitude - 0.02,
-            maxLatitude: coord.latitude + 0.02,
-            minLongitude: coord.longitude - 0.02,
-            maxLongitude: coord.longitude + 0.02
+            minLatitude: coord.latitude - 0.00125,
+            maxLatitude: coord.latitude + 0.00125,
+            minLongitude: coord.longitude - 0.00125,
+            maxLongitude: coord.longitude + 0.00125
         )
         refreshMapData()
     }

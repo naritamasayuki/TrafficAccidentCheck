@@ -353,7 +353,7 @@ struct FallbackMapKitView: View {
     @State private var position: MapCameraPosition = .region(
         MKCoordinateRegion(
             center: LocationAndAlertManager.defaultCoordinate,
-            span: MKCoordinateSpan(latitudeDelta: 0.03, longitudeDelta: 0.03)
+            span: MKCoordinateSpan(latitudeDelta: 0.0025, longitudeDelta: 0.0025)
         )
     )
 
@@ -472,7 +472,7 @@ struct FallbackMapKitView: View {
                 position = .region(
                     MKCoordinateRegion(
                         center: cameraCenter,
-                        span: MKCoordinateSpan(latitudeDelta: 0.035, longitudeDelta: 0.035)
+                        span: MKCoordinateSpan(latitudeDelta: 0.0025, longitudeDelta: 0.0025)
                     )
                 )
             }
@@ -485,7 +485,7 @@ struct FallbackMapKitView: View {
                 minLongitude: region.center.longitude - region.span.longitudeDelta / 2.0,
                 maxLongitude: region.center.longitude + region.span.longitudeDelta / 2.0
             )
-            let approxZoom = Float(max(4.0, min(20.0, log2(360.0 / max(0.001, region.span.longitudeDelta)))))
+            let approxZoom = Float(max(4.0, min(20.0, log2(360.0 / max(0.0005, region.span.longitudeDelta)))))
             onRegionChanged(box, region.center, approxZoom)
         }
     }
