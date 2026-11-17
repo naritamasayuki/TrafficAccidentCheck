@@ -389,8 +389,8 @@ extension ContentView {
     }
 
     private var bottomStatusLegendBar: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 8) {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
                 legendToggleChip(
                     label: "死亡",
                     color: .red,
@@ -419,16 +419,23 @@ extension ContentView {
                 ) {
                     filter.showSNSReports.toggle()
                 }
-                Spacer(minLength: 4)
-                Text("\(visibleRecords.count)/\(totalMatchedInBox)件")
+            }
+
+            HStack {
+                Text("タップで表示切替")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Text("表示 \(visibleRecords.count)/\(totalMatchedInBox)件")
+                    .font(.caption.weight(.medium))
                     .monospacedDigit()
                     .foregroundStyle(.secondary)
             }
         }
-        .font(.caption2.weight(.medium))
-        .padding(.horizontal, 10)
-        .padding(.vertical, 7)
-        .background(.ultraThinMaterial, in: Capsule())
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18))
+        .shadow(color: .black.opacity(0.08), radius: 4, y: 2)
     }
 
     private func legendToggleChip(
@@ -438,20 +445,28 @@ extension ContentView {
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
-            HStack(spacing: 4) {
+            HStack(spacing: 5) {
                 Circle()
                     .fill(isActive ? color : Color.gray.opacity(0.35))
-                    .overlay(Circle().stroke(color, lineWidth: isActive ? 0 : 1))
-                    .frame(width: 9, height: 9)
+                    .overlay(Circle().stroke(color, lineWidth: isActive ? 0 : 1.5))
+                    .frame(width: 12, height: 12)
                 Text(label)
+                    .font(.footnote.weight(.bold))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
                     .strikethrough(!isActive)
                     .foregroundStyle(isActive ? .primary : .secondary)
             }
-            .padding(.horizontal, 6)
-            .padding(.vertical, 3)
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 9)
             .background(
-                isActive ? color.opacity(0.14) : Color.clear,
+                isActive ? color.opacity(0.18) : Color.secondary.opacity(0.08),
                 in: Capsule()
+            )
+            .overlay(
+                Capsule()
+                    .stroke(isActive ? color.opacity(0.65) : Color.gray.opacity(0.3), lineWidth: 1.2)
             )
         }
         .buttonStyle(.plain)
