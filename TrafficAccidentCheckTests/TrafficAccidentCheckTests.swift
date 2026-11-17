@@ -418,6 +418,29 @@ final class TrafficAccidentCheckTests: XCTestCase {
         XCTAssertTrue(filter.matches(fatalRecord, latestYear: 2025))
     }
 
+    @MainActor
+    func testBackgroundModeToggleAndPersistence() {
+        let key = "TrafficAccidentCheck.BackgroundModeEnabled.v1"
+        let previous = UserDefaults.standard.object(forKey: key)
+        defer {
+            if let previous {
+                UserDefaults.standard.set(previous, forKey: key)
+            } else {
+                UserDefaults.standard.removeObject(forKey: key)
+            }
+        }
+
+        UserDefaults.standard.removeObject(forKey: key)
+        let manager = LocationAndAlertManager()
+        XCTAssertFalse(manager.isBackgroundModeEnabled, "初期状態は電池消費配慮のためバックグラウンドモードOFFであるべき")
+
+        manager.isBackgroundModeEnabled = true
+        XCTAssertTrue(UserDefaults.standard.bool(forKey: key))
+
+        let reloadedManager = LocationAndAlertManager()
+        XCTAssertTrue(reloadedManager.isBackgroundModeEnabled, "バックグラウンドモード設定はUserDefaultsに永続化されるべき")
+    }
+
     private func makeSampleRecord(id: Int, severityCode: UInt8, deaths: UInt8, injuries: UInt8) -> AccidentRecord {
         AccidentRecord(
             id: id,

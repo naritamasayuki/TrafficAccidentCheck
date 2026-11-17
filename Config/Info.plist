@@ -10,6 +10,11 @@
 	<string>$(ADMOB_BANNER_UNIT_ID)</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+		<string>audio</string>
+	</array>
 	<key>NSUserTrackingUsageDescription</key>
 	<string>お客様に関連性の高い広告を表示し、交通事故マップおよび音声安全案内機能を無料で提供し続けるために広告識別子を使用します（許可しない場合でもアプリの全機能をご利用いただけます）。</string>
 	<key>SKAdNetworkItems</key>

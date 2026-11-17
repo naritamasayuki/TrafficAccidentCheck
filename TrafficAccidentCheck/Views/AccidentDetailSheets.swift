@@ -231,6 +231,7 @@ struct FilterSheet: View {
     @Binding var isFollowingUser: Bool
     @Binding var isProximityAlertEnabled: Bool
     @Binding var isVoiceAnnouncementEnabled: Bool
+    @Binding var isBackgroundModeEnabled: Bool
     var latestYear: UInt16 = AccidentFilter.defaultReferenceYear
     var availableYears: [UInt16] = []
     let onJumpToCoordinate: (CLLocationCoordinate2D, String) -> Void
@@ -257,6 +258,12 @@ struct FilterSheet: View {
                     Toggle("移動に合わせてマップを現在地に追従する", isOn: $isFollowingUser)
                     Toggle("事故多発エリア接近時に通知する", isOn: $isProximityAlertEnabled)
                     Toggle("事故現場接近時に音声アナウンスで警告する", isOn: $isVoiceAnnouncementEnabled)
+                    Toggle("バックグラウンドモード（画面消灯中も案内を継続）", isOn: $isBackgroundModeEnabled)
+                    if isBackgroundModeEnabled {
+                        Text("アプリを閉じた状態や画面消灯中も現在地を監視し、多発地点への接近を音声と通知でお知らせします（電池消費が増える場合があります）。")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
                     Button {
                         onSimulateHotspotAlert()
                         dismiss()

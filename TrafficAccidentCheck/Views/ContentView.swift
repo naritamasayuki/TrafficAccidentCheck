@@ -91,6 +91,7 @@ struct ContentView: View {
                 isFollowingUser: $locationManager.isFollowingUser,
                 isProximityAlertEnabled: $locationManager.isProximityAlertEnabled,
                 isVoiceAnnouncementEnabled: $locationManager.isVoiceAnnouncementEnabled,
+                isBackgroundModeEnabled: $locationManager.isBackgroundModeEnabled,
                 latestYear: dataStore.latestYear,
                 availableYears: dataStore.availableYears,
                 onJumpToCoordinate: { coord, _ in
@@ -268,6 +269,14 @@ extension ContentView {
                     activeColor: locationManager.isVoiceAnnouncementEnabled ? .teal : nil
                 ) {
                     locationManager.isVoiceAnnouncementEnabled.toggle()
+                }
+
+                pillButton(
+                    title: locationManager.isBackgroundModeEnabled ? "バックグラウンドON" : "バックグラウンドOFF",
+                    icon: locationManager.isBackgroundModeEnabled ? "moon.stars.fill" : "moon.stars",
+                    activeColor: locationManager.isBackgroundModeEnabled ? .indigo : nil
+                ) {
+                    locationManager.isBackgroundModeEnabled.toggle()
                 }
 
                 pillButton(
