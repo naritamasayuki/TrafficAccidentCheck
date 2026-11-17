@@ -13,6 +13,7 @@ final class LocationAndAlertManager: NSObject, ObservableObject {
     private static let proximityAlertKey = "TrafficAccidentCheck.ProximityAlertEnabled.v1"
     private static let voiceAlertKey = "TrafficAccidentCheck.VoiceAnnouncementEnabled.v1"
     private static let followUserKey = "TrafficAccidentCheck.FollowUserEnabled.v1"
+    private static let backgroundModeKey = "TrafficAccidentCheck.BackgroundModeEnabled.v1"
 
     /// 現在のユーザー位置座標
     @Published private(set) var userCoordinate: CLLocationCoordinate2D?
@@ -47,6 +48,17 @@ final class LocationAndAlertManager: NSObject, ObservableObject {
         }
     }
 
+    /// アプリを閉じた状態や画面消灯中もバックグラウンドで接近検知・音声案内を継続するかどうか
+    @Published var isBackgroundModeEnabled: Bool {
+        didSet {
+            UserDefaults.standard.set(isBackgroundModeEnabled, forKey: Self.backgroundModeKey)
+            applyBackgroundLocationSetting()
+            if isBackgroundModeEnabled {
+                requestPermissionsAndStart()
+            }
+        }
+    }
+
     /// 現在画面上に表示中の接近警告ホットスポット
     @Published var activeHotspotAlert: AccidentHotspot?
 
@@ -64,6 +76,7 @@ final class LocationAndAlertManager: NSObject, ObservableObject {
         self.isProximityAlertEnabled = defaults.object(forKey: Self.proximityAlertKey) as? Bool ?? true
         self.isVoiceAnnouncementEnabled = defaults.object(forKey: Self.voiceAlertKey) as? Bool ?? true
         self.isFollowingUser = defaults.object(forKey: Self.followUserKey) as? Bool ?? true
+        self.isBackgroundModeEnabled = defaults.object(forKey: Self.backgroundModeKey) as? Bool ?? false
 
         super.init()
         locationManager.delegate = self
@@ -72,6 +85,28 @@ final class LocationAndAlertManager: NSObject, ObservableObject {
         locationManager.distanceFilter = 10.0
         authorizationStatus = locationManager.authorizationStatus
         speechSynthesizer.delegate = self
+        applyBackgroundLocationSetting()
+    }
+
+    /// 実行バンドルの Info.plist にバックグラウンド位置情報モード（`location`）が定義されているか確認する。
+    static func supportsBackgroundLocation(in bundle: Bundle = .main) -> Bool {
+        let modes = bundle.object(forInfoDictionaryKey: "UIBackgroundModes") as? [String] ?? []
+        return modes.contains("location")
+    }
+
+    /// バックグラウンドモードのON/OFFに応じて CLLocationManager のバックグラウンド更新設定を切り替える。
+    private func applyBackgroundLocationSetting() {
+        let canUseBackground = Self.supportsBackgroundLocation()
+        if isBackgroundModeEnabled && !canUseBackground {
+            AppLogger.location.error("Info.plist に UIBackgroundModes(location) が未設定のためバックグラウンド位置情報を有効化できません。")
+            return
+        }
+        if canUseBackground {
+            locationManager.allowsBackgroundLocationUpdates = isBackgroundModeEnabled
+            locationManager.showsBackgroundLocationIndicator = isBackgroundModeEnabled
+        }
+        locationManager.pausesLocationUpdatesAutomatically = !isBackgroundModeEnabled
+        AppLogger.location.info("バックグラウンドモード設定: \(self.isBackgroundModeEnabled ? "ON" : "OFF")")
     }
 
     /// 位置情報とローカル通知の権限をリクエストし、現在地の測位とマップ追従を開始する。
