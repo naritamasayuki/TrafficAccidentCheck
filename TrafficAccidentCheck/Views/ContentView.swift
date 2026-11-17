@@ -481,7 +481,11 @@ extension ContentView {
         let radius = filter.diagnosisRadius.meters
         let nearbyRecords = dataStore.recordsNear(coordinate: targetCoord, radiusMeters: radius, filter: filter)
         let hotspotSource = nearbyRecords.isEmpty ? queryResult.records : (queryResult.records + nearbyRecords)
-        let detectedHotspots = DangerAnalyzer.detectHotspots(from: hotspotSource, minimumCount: 3)
+        let detectedHotspots = DangerAnalyzer.detectHotspots(
+            from: hotspotSource,
+            minimumCount: 5,
+            targetYear: dataStore.latestYear
+        )
         hotspots = detectedHotspots
         locationManager.updateMonitoredHotspots(detectedHotspots)
 

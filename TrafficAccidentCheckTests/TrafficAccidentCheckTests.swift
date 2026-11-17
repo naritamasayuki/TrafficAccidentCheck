@@ -156,7 +156,79 @@ final class TrafficAccidentCheckTests: XCTestCase {
         XCTAssertEqual(assessment.dominantAccidentType, "人対車両（歩行者事故）")
 
         let hotspots = DangerAnalyzer.detectHotspots(from: [fatalRecord], minimumCount: 5)
-        XCTAssertEqual(hotspots.count, 1, "死亡事故を含むセルは件数閾値未満でもホットスポットとして抽出されるべき")
+        XCTAssertEqual(hotspots.count, 0, "直近1年で5件未満のセルは死亡事故であっても多発地点として抽出されないべき")
+
+        let recentFiveRecords = (1...5).map { idx in
+            AccidentRecord(
+                id: 100 + idx,
+                latitude: center.latitude,
+                longitude: center.longitude,
+                year: 2025,
+                month: 6,
+                day: UInt8(idx),
+                hour: 12,
+                minute: 0,
+                severityCode: 2,
+                deaths: 0,
+                injuries: 1,
+                weatherCode: 1,
+                dayNightCode: 12,
+                roadSurfaceCode: 1,
+                roadShapeCode: 1,
+                signalCode: 1,
+                accidentTypeCode: 21,
+                weekdayCode: 1,
+                holidayCode: 3,
+                partyACode: 3,
+                partyBCode: 3,
+                ageACode: 35,
+                ageBCode: 45,
+                prefectureCode: 13,
+                injuryACode: 2,
+                injuryBCode: 2
+            )
+        }
+        let mixedYearRecords = recentFiveRecords.dropLast() + [
+            AccidentRecord(
+                id: 200,
+                latitude: center.latitude,
+                longitude: center.longitude,
+                year: 2024,
+                month: 6,
+                day: 10,
+                hour: 12,
+                minute: 0,
+                severityCode: 2,
+                deaths: 0,
+                injuries: 1,
+                weatherCode: 1,
+                dayNightCode: 12,
+                roadSurfaceCode: 1,
+                roadShapeCode: 1,
+                signalCode: 1,
+                accidentTypeCode: 21,
+                weekdayCode: 1,
+                holidayCode: 3,
+                partyACode: 3,
+                partyBCode: 3,
+                ageACode: 35,
+                ageBCode: 45,
+                prefectureCode: 13,
+                injuryACode: 2,
+                injuryBCode: 2
+            )
+        ]
+        XCTAssertEqual(
+            DangerAnalyzer.detectHotspots(from: Array(mixedYearRecords), minimumCount: 5, targetYear: 2025).count,
+            0,
+            "直近1年（2025年）が4件＋前年（2024年）1件の場合は多発地点に該当しないべき"
+        )
+        let validHotspots = DangerAnalyzer.detectHotspots(from: recentFiveRecords, minimumCount: 5, targetYear: 2025)
+        XCTAssertEqual(validHotspots.count, 1, "直近1年で5件以上のセルは多発地点として抽出されるべき")
+
+        let conciseMessage = LocationAndAlertManager.warningMessage(for: validHotspots[0], distanceMeters: 80)
+        XCTAssertTrue(conciseMessage.contains("80メートル"))
+        XCTAssertLessThanOrEqual(conciseMessage.count, 45, "接近音声アナウンスは簡潔であるべき")
     }
 
     // MARK: - 3. SNSAccidentService 地名抽出・出典表示テスト
@@ -289,7 +361,7 @@ final class TrafficAccidentCheckTests: XCTestCase {
             injuryACode: 1,
             injuryBCode: 2
         )
-        let spots = DangerAnalyzer.detectHotspots(from: [rec, rec, rec], minimumCount: 3)
+        let spots = DangerAnalyzer.detectHotspots(from: [rec, rec, rec], minimumCount: 1, targetYear: 2025)
         XCTAssertEqual(spots.first?.accidentCount, 1)
 
         XCTAssertEqual(

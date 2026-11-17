@@ -202,7 +202,7 @@ struct GoogleMapContainerView: UIViewRepresentable {
                     // 中心の「事故多発」警告バッジマーカー
                     let badgeMarker = GMSMarker(position: spot.coordinate)
                     badgeMarker.title = "⚠️ 事故多発ゾーン（\(spot.accidentCount)件）"
-                    badgeMarker.snippet = "半径150m内で\(spot.accidentCount)件発生（うち死亡\(spot.fatalCount)件）"
+                    badgeMarker.snippet = "直近1年・半径150m内で\(spot.accidentCount)件発生（うち死亡\(spot.fatalCount)件）"
                     badgeMarker.iconView = Self.makeHotspotBadgeView(for: spot, color: baseColor)
                     badgeMarker.groundAnchor = CGPoint(x: 0.5, y: 0.5)
                     badgeMarker.zIndex = 200

@@ -162,17 +162,17 @@ final class LocationAndAlertManager: NSObject, ObservableObject {
         }
     }
 
+    /// 事故多発地点への接近時に読み上げる簡潔な音声アナウンス文言を生成する。
+    static func warningMessage(for hotspot: AccidentHotspot, distanceMeters: Int) -> String {
+        if hotspot.fatalCount > 0 {
+            return "この先\(distanceMeters)メートル付近、死亡事故を含む多発地点です。ご注意ください。"
+        }
+        return "この先\(distanceMeters)メートル付近、事故多発地点です。ご注意ください。"
+    }
+
     /// 日本語音声合成（AVSpeechSynthesizer）で事故現場への接近アナウンスを読み上げる。
     func speakWarning(for hotspot: AccidentHotspot, distanceMeters: Int) {
-        let countText = "過去に\(hotspot.accidentCount)件の人身事故、特に\(hotspot.dominantType)が発生しています。"
-        let message: String
-        if hotspot.fatalCount > 0 {
-            message = "ご注意ください。この先、およそ\(distanceMeters)メートル付近は、死亡事故が発生した危険地点です。"
-                + countText + "速度を落として安全運転を心がけてください。"
-        } else {
-            message = "ご注意ください。この先、およそ\(distanceMeters)メートル付近は、事故多発地点です。"
-                + countText + "周囲の安全を十分に確認してください。"
-        }
+        let message = Self.warningMessage(for: hotspot, distanceMeters: distanceMeters)
 
         do {
             let audioSession = AVAudioSession.sharedInstance()
