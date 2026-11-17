@@ -62,7 +62,7 @@ struct AccidentHotspot: Identifiable, Equatable, Sendable {
     }
 
     var alertBody: String {
-        "周辺150m以内で過去に\(accidentCount)件の人身事故（うち死亡\(fatalCount)件・最多: \(dominantType)）が発生しています。速度を落として周囲を確認してください。"
+        "直近1年・周辺150m以内で\(accidentCount)件の人身事故（うち死亡\(fatalCount)件・最多: \(dominantType)）が発生しています。速度を落として周囲を確認してください。"
     }
 }
 
@@ -132,15 +132,17 @@ enum DangerAnalyzer {
         )
     }
 
-    /// 表示領域内の事故レコード群から、約150mメッシュ単位で事故が集中しているホットスポット（多発地点）を抽出する。
+    /// 表示領域内の事故レコード群から、直近1年（最新年）で約150mメッシュ単位に5件以上集中しているホットスポット（多発地点）を抽出する。
     static func detectHotspots(
         from records: [AccidentRecord],
         minimumCount: Int = 5,
-        maxHotspots: Int = 15
+        maxHotspots: Int = 15,
+        targetYear: UInt16? = nil
     ) -> [AccidentHotspot] {
         guard !records.isEmpty else { return [] }
+        guard let latestYear = targetYear ?? records.map(\.year).max() else { return [] }
 
-        // 約0.00135度 ≒ 150m グリッドでバケット化
+        // 約0.00135度 ≒ 150m グリッドでバケット化（直近1年分のみ対象）
         let gridStep = 0.00135
         struct GridKey: Hashable {
             let latBucket: Int
@@ -150,6 +152,7 @@ enum DangerAnalyzer {
         var buckets: [GridKey: [AccidentRecord]] = [:]
         var seenIDs = Set<Int>()
         for rec in records {
+            guard rec.year == latestYear else { continue }
             guard seenIDs.insert(rec.id).inserted else { continue }
             let key = GridKey(
                 latBucket: Int((rec.latitude / gridStep).rounded()),
@@ -160,9 +163,9 @@ enum DangerAnalyzer {
 
         var hotspots: [AccidentHotspot] = []
         for (key, group) in buckets {
+            // 直近1年で minimumCount 件（デフォルト5件）以上発生したセルのみを事故多発地点とする
+            guard group.count >= minimumCount else { continue }
             let fatalCount = group.filter(\.isFatal).count
-            // 死亡事故が1件以上、または負傷事故が minimumCount 件以上のセルを多発地点とする
-            guard group.count >= minimumCount || fatalCount > 0 else { continue }
 
             let avgLat = group.map(\.latitude).reduce(0, +) / Double(group.count)
             let avgLon = group.map(\.longitude).reduce(0, +) / Double(group.count)
