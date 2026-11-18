@@ -198,11 +198,11 @@ final class LocationAndAlertManager: NSObject, ObservableObject {
     }
 
     /// 事故多発地点への接近時に読み上げる簡潔な音声アナウンス文言を生成する。
-    static func warningMessage(for hotspot: AccidentHotspot, distanceMeters: Int) -> String {
+    nonisolated static func warningMessage(for hotspot: AccidentHotspot, distanceMeters: Int) -> String {
         if hotspot.fatalCount > 0 {
-            return "この先\(distanceMeters)メートル付近、死亡事故を含む多発地点です。ご注意ください。"
+            return L10n.format("この先%dメートル付近、死亡事故を含む多発地点です。ご注意ください。", distanceMeters)
         }
-        return "この先\(distanceMeters)メートル付近、事故多発地点です。ご注意ください。"
+        return L10n.format("この先%dメートル付近、事故多発地点です。ご注意ください。", distanceMeters)
     }
 
     /// 日本語音声合成（AVSpeechSynthesizer）で事故現場への接近アナウンスを読み上げる。
@@ -226,7 +226,7 @@ final class LocationAndAlertManager: NSObject, ObservableObject {
         }
 
         let utterance = AVSpeechUtterance(string: message)
-        utterance.voice = AVSpeechSynthesisVoice(language: "ja-JP")
+        utterance.voice = AVSpeechSynthesisVoice(language: L10n.speechLanguageCode)
         utterance.rate = AVSpeechUtteranceDefaultSpeechRate
         utterance.pitchMultiplier = 1.0
         utterance.volume = 1.0
@@ -236,7 +236,7 @@ final class LocationAndAlertManager: NSObject, ObservableObject {
     private func sendLocalNotification(for hotspot: AccidentHotspot, distanceMeters: Int) {
         let content = UNMutableNotificationContent()
         content.title = hotspot.alertTitle
-        content.body = "前方約\(distanceMeters)m: \(hotspot.alertBody)"
+        content.body = L10n.format("前方約%dm: %@", distanceMeters, hotspot.alertBody)
         content.sound = .default
 
         let request = UNNotificationRequest(

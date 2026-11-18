@@ -96,7 +96,7 @@ struct AccidentDetailSheet: View {
                     )
                     detailRow(
                         label: "データ出典",
-                        value: "警察庁 交通事故統計オープンデータ（\(record.year)年本票）",
+                        value: L10n.format("警察庁 交通事故統計オープンデータ（%d年本票）", Int(record.year)),
                         icon: "checkmark.seal.fill"
                     )
                     if let npaURL = URL(
@@ -275,7 +275,7 @@ struct FilterSheet: View {
                 Section("マップ表示モード") {
                     Picker("表示形式", selection: $filter.displayMode) {
                         ForEach(MapDisplayMode.allCases) { mode in
-                            Text(mode.rawValue).tag(mode)
+                            Text(mode.localizedName).tag(mode)
                         }
                     }
                     .pickerStyle(.segmented)
@@ -318,31 +318,31 @@ struct FilterSheet: View {
                         Text(YearFilter.all.displayText(latestYear: latestYear))
                             .tag(YearFilter.all)
                         ForEach(availableYears, id: \.self) { year in
-                            Text("\(year)年のみ").tag(YearFilter.specific(year))
+                            Text(L10n.format("%d年のみ", Int(year))).tag(YearFilter.specific(year))
                         }
                     }
 
                     Picker("事故内容（重大度）", selection: $filter.severity) {
                         ForEach(SeverityFilter.allCases) { item in
-                            Text(item.rawValue).tag(item)
+                            Text(item.localizedName).tag(item)
                         }
                     }
 
                     Picker("発生時間帯（昼夜）", selection: $filter.timeOfDay) {
                         ForEach(TimeOfDayFilter.allCases) { item in
-                            Text(item.rawValue).tag(item)
+                            Text(item.localizedName).tag(item)
                         }
                     }
 
                     Picker("天候", selection: $filter.weather) {
                         ForEach(WeatherFilter.allCases) { item in
-                            Text(item.rawValue).tag(item)
+                            Text(item.localizedName).tag(item)
                         }
                     }
 
                     Picker("事故類型", selection: $filter.accidentType) {
                         ForEach(AccidentTypeFilter.allCases) { item in
-                            Text(item.rawValue).tag(item)
+                            Text(item.localizedName).tag(item)
                         }
                     }
 
@@ -356,12 +356,12 @@ struct FilterSheet: View {
                 Section("主要都市へジャンプ") {
                     ForEach(majorCities, id: \.name) { city in
                         Button {
-                            onJumpToCoordinate(city.coord, city.name)
+                            onJumpToCoordinate(city.coord, L10n.tr(city.name))
                             dismiss()
                         } label: {
                             HStack {
                                 Image(systemName: "location.magnifyingglass")
-                                Text(city.name)
+                                Text(LocalizedStringKey(city.name))
                                 Spacer()
                             }
                         }

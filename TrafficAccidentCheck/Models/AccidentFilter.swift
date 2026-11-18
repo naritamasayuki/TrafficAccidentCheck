@@ -6,6 +6,7 @@ enum MapDisplayMode: String, CaseIterable, Identifiable, Codable, Sendable {
     case heatmap = "ヒートマップ"
 
     var id: String { rawValue }
+    var localizedName: String { L10n.tr(rawValue) }
 }
 
 /// 重大度フィルタ区分。
@@ -15,6 +16,7 @@ enum SeverityFilter: String, CaseIterable, Identifiable, Codable, Sendable {
     case injuryOnly = "負傷事故のみ"
 
     var id: String { rawValue }
+    var localizedName: String { L10n.tr(rawValue) }
 }
 
 /// 昼夜フィルタ区分。
@@ -24,6 +26,7 @@ enum TimeOfDayFilter: String, CaseIterable, Identifiable, Codable, Sendable {
     case nighttime = "夜間"
 
     var id: String { rawValue }
+    var localizedName: String { L10n.tr(rawValue) }
 }
 
 /// 事故類型フィルタ区分。
@@ -34,6 +37,7 @@ enum AccidentTypeFilter: String, CaseIterable, Identifiable, Codable, Sendable {
     case singleVehicle = "車両単独"
 
     var id: String { rawValue }
+    var localizedName: String { L10n.tr(rawValue) }
 
     func matches(code: UInt8) -> Bool {
         switch self {
@@ -54,6 +58,7 @@ enum WeatherFilter: String, CaseIterable, Identifiable, Codable, Sendable {
     case snowOrFog = "雪・霧"
 
     var id: String { rawValue }
+    var localizedName: String { L10n.tr(rawValue) }
 
     func matches(code: UInt8) -> Bool {
         switch self {
@@ -80,11 +85,11 @@ enum YearFilter: Equatable, Hashable, Codable, Sendable {
         switch self {
         case .recentThreeYears:
             let startYear = latestYear >= 2 ? latestYear - 2 : latestYear
-            return "直近3年（\(startYear)〜\(latestYear)年）"
+            return L10n.format("直近3年（%d〜%d年）", Int(startYear), Int(latestYear))
         case .all:
-            return "すべて（全期間）"
+            return L10n.tr("すべて（全期間）")
         case .specific(let year):
-            return "\(year)年のみ"
+            return L10n.format("%d年のみ", Int(year))
         }
     }
 
@@ -116,7 +121,9 @@ enum DiagnosisRadiusFilter: Int, CaseIterable, Identifiable, Codable, Sendable {
 
     /// 表示用ラベル
     var displayText: String {
-        rawValue >= 1000 ? "半径\(rawValue / 1000)km" : "半径\(rawValue)m"
+        rawValue >= 1000
+            ? L10n.format("半径%dkm", rawValue / 1000)
+            : L10n.format("半径%dm", rawValue)
     }
 }
 
@@ -252,6 +259,7 @@ enum BugReportCategory: String, CaseIterable, Identifiable, Codable, Sendable {
     case other = "その他"
 
     var id: String { rawValue }
+    var localizedName: String { L10n.tr(rawValue) }
 }
 
 /// バグ報告フォームの入力下書きおよびURL生成モデル（自動保存対応）。

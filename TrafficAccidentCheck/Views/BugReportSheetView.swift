@@ -40,7 +40,7 @@ struct BugReportSheetView: View {
                 Section("不具合・ご要望のカテゴリ") {
                     Picker("カテゴリ", selection: $draft.category) {
                         ForEach(BugReportCategory.allCases) { item in
-                            Text(item.rawValue).tag(item)
+                            Text(item.localizedName).tag(item)
                         }
                     }
                 }

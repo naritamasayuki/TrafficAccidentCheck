@@ -30,3 +30,26 @@ enum AppLogger {
         logger.error("\(msg, privacy: .public)")
     }
 }
+
+/// 多言語化（日本語・英語・中国語）用のローカライズヘルパー。
+enum L10n {
+    static func tr(_ key: String) -> String {
+        NSLocalizedString(key, comment: "")
+    }
+
+    static func format(_ key: String, _ args: CVarArg...) -> String {
+        let format = NSLocalizedString(key, comment: "")
+        return String(format: format, locale: Locale.current, arguments: args)
+    }
+
+    /// 現在のアプリ言語設定に応じた音声合成用BCP-47言語コード
+    static var speechLanguageCode: String {
+        let preferred = Bundle.main.preferredLocalizations.first ?? "ja"
+        if preferred.hasPrefix("en") { return "en-US" }
+        if preferred.hasPrefix("zh-Hant") || preferred.hasPrefix("zh-TW") || preferred.hasPrefix("zh-HK") {
+            return "zh-TW"
+        }
+        if preferred.hasPrefix("zh") { return "zh-CN" }
+        return "ja-JP"
+    }
+}

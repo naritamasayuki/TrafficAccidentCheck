@@ -201,8 +201,8 @@ struct GoogleMapContainerView: UIViewRepresentable {
 
                     // 中心の「事故多発」警告バッジマーカー
                     let badgeMarker = GMSMarker(position: spot.coordinate)
-                    badgeMarker.title = "⚠️ 事故多発ゾーン（\(spot.accidentCount)件）"
-                    badgeMarker.snippet = "直近1年・半径150m内で\(spot.accidentCount)件発生（うち死亡\(spot.fatalCount)件）"
+                    badgeMarker.title = L10n.format("⚠️ 事故多発ゾーン（%d件）", spot.accidentCount)
+                    badgeMarker.snippet = L10n.format("直近1年・半径150m内で%d件発生（うち死亡%d件）", spot.accidentCount, spot.fatalCount)
                     badgeMarker.iconView = Self.makeHotspotBadgeView(for: spot, color: baseColor)
                     badgeMarker.groundAnchor = CGPoint(x: 0.5, y: 0.5)
                     badgeMarker.zIndex = 200
@@ -218,7 +218,7 @@ struct GoogleMapContainerView: UIViewRepresentable {
 
                 for report in snsReports {
                     let marker = GMSMarker(position: report.coordinate)
-                    marker.title = "【SNS・未確認】\(report.extractedLocation)"
+                    marker.title = L10n.format("【SNS・未確認】%@", report.extractedLocation)
                     marker.snippet = report.title
                     marker.icon = GMSMarker.markerImage(with: .systemPurple)
                     marker.userData = report
@@ -231,7 +231,7 @@ struct GoogleMapContainerView: UIViewRepresentable {
 
         private static func makeHotspotBadgeView(for spot: AccidentHotspot, color: UIColor) -> UIView {
             let label = UILabel()
-            label.text = "⚠️ 多発 \(spot.accidentCount)件"
+            label.text = L10n.format("⚠️ 多発 %d件", spot.accidentCount)
             label.font = UIFont.systemFont(ofSize: 11, weight: .heavy)
             label.textColor = .white
             label.textAlignment = .center

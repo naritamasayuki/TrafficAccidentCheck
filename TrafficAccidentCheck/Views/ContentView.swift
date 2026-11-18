@@ -17,7 +17,7 @@ struct ContentView: View {
 
     @State private var snsReports: [SNSAccidentReport] = []
     @State private var isRefreshingSNS = false
-    @State private var lastSNSUpdatedText: String = "同梱データ読込済"
+    @State private var lastSNSUpdatedText: String = L10n.tr("同梱データ読込済")
 
     @State private var cameraCenter = LocationAndAlertManager.defaultCoordinate
     @State private var cameraZoom: Float = 17.5
@@ -194,7 +194,7 @@ extension ContentView {
                         HStack(spacing: 6) {
                             let radiusInt = Int(assessment.radiusMeters)
                             let radiusText = radiusInt >= 1000 ? "\(radiusInt / 1000)km" : "\(radiusInt)m"
-                            Text("周辺\(radiusText)危険度: \(assessment.level.rawValue)")
+                            Text("周辺\(radiusText)危険度: \(assessment.level.localizedName)")
                                 .font(.subheadline.bold())
                             Text("(\(assessment.score)/100)")
                                 .font(.caption.monospacedDigit().bold())
@@ -304,7 +304,7 @@ extension ContentView {
                 }
 
                 pillButton(
-                    title: "SNS速報(未確認): \(snsReports.count)件",
+                    title: L10n.format("SNS速報(未確認): %d件", snsReports.count),
                     icon: filter.showSNSReports ? "checkmark.circle.fill" : "circle",
                     activeColor: filter.showSNSReports ? .purple : nil
                 ) { filter.showSNSReports.toggle() }
@@ -327,7 +327,7 @@ extension ContentView {
 
     private func pillButton(title: String, icon: String, activeColor: Color?, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Label(title, systemImage: icon)
+            Label(LocalizedStringKey(title), systemImage: icon)
                 .font(.caption.bold())
                 .padding(.horizontal, 11)
                 .padding(.vertical, 7)
@@ -450,7 +450,7 @@ extension ContentView {
                     .fill(isActive ? color : Color.gray.opacity(0.35))
                     .overlay(Circle().stroke(color, lineWidth: isActive ? 0 : 1.5))
                     .frame(width: 12, height: 12)
-                Text(label)
+                Text(LocalizedStringKey(label))
                     .font(.footnote.weight(.bold))
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
@@ -470,8 +470,8 @@ extension ContentView {
             )
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("\(label)の表示切り替え")
-        .accessibilityValue(isActive ? "表示中" : "非表示")
+        .accessibilityLabel(L10n.format("%@の表示切り替え", L10n.tr(label)))
+        .accessibilityValue(L10n.tr(isActive ? "表示中" : "非表示"))
     }
 
     private func initializeAppData() async {
@@ -529,7 +529,7 @@ extension ContentView {
         snsReports = await snsService.fetchLatestFreeSNSReports(existingReports: snsReports)
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm"
-        lastSNSUpdatedText = "\(formatter.string(from: Date())) 更新"
+        lastSNSUpdatedText = L10n.format("%@ 更新", formatter.string(from: Date()))
         refreshMapData()
     }
 

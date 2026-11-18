@@ -8,6 +8,8 @@ enum DangerLevel: String, Sendable {
     case warning = "高（警戒）"
     case critical = "極めて高い（厳重警戒）"
 
+    var localizedName: String { L10n.tr(rawValue) }
+
     var symbolName: String {
         switch self {
         case .safe: return "checkmark.shield.fill"
@@ -58,11 +60,16 @@ struct AccidentHotspot: Identifiable, Equatable, Sendable {
     }
 
     var alertTitle: String {
-        fatalCount > 0 ? "⚠️ 死亡事故発生エリアに接近中" : "⚠️ 事故多発地点に接近中"
+        fatalCount > 0 ? L10n.tr("⚠️ 死亡事故発生エリアに接近中") : L10n.tr("⚠️ 事故多発地点に接近中")
     }
 
     var alertBody: String {
-        "直近1年・周辺150m以内で\(accidentCount)件の人身事故（うち死亡\(fatalCount)件・最多: \(dominantType)）が発生しています。速度を落として周囲を確認してください。"
+        L10n.format(
+            "直近1年・周辺150m以内で%d件の人身事故（うち死亡%d件・最多: %@）が発生しています。速度を落として周囲を確認してください。",
+            accidentCount,
+            fatalCount,
+            dominantType
+        )
     }
 }
 
@@ -104,19 +111,35 @@ enum DangerAnalyzer {
             typeHistogram[record.accidentTypeCode, default: 0] += 1
         }
         let topCode = typeHistogram.max(by: { $0.value < $1.value })?.key
-        let dominantType = topCode.map { AccidentCodebook.accidentTypeName(for: $0) } ?? "データなし"
+        let dominantType = topCode.map { AccidentCodebook.accidentTypeName(for: $0) } ?? L10n.tr("データなし")
 
         let advice: String
         if fatalCount > 0 {
-            advice = "半径\(Int(radiusMeters))m以内で死亡事故が\(fatalCount)件発生しています。交差点進入時や横断歩道手前での一時停止・減速を徹底してください。"
+            advice = L10n.format(
+                "半径%dm以内で死亡事故が%d件発生しています。交差点進入時や横断歩道手前での一時停止・減速を徹底してください。",
+                Int(radiusMeters),
+                fatalCount
+            )
         } else if total >= 20 {
-            advice = "事故が非常に集中しているエリアです（\(dominantType)が多発）。車間距離を十分にとり、右左折時の巻き込みに注意してください。"
+            advice = L10n.format(
+                "事故が非常に集中しているエリアです（%@が多発）。車間距離を十分にとり、右左折時の巻き込みに注意してください。",
+                dominantType
+            )
         } else if nightRatio >= 0.45 && total >= 5 {
-            advice = "夜間・薄暮時の事故割合が\(Int((nightRatio * 100).rounded()))%と高い地点です。早めのライト点灯と歩行者の見落としに注意してください。"
+            advice = L10n.format(
+                "夜間・薄暮時の事故割合が%d%%と高い地点です。早めのライト点灯と歩行者の見落としに注意してください。",
+                Int((nightRatio * 100).rounded())
+            )
         } else if total > 0 {
-            advice = "過去に\(total)件の人身事故が記録されています。見通しの悪い交差点や自転車の飛び出しに注意しましょう。"
+            advice = L10n.format(
+                "過去に%d件の人身事故が記録されています。見通しの悪い交差点や自転車の飛び出しに注意しましょう。",
+                total
+            )
         } else {
-            advice = "半径\(Int(radiusMeters))m以内の公式事故記録は僅少ですが、引き続き安全運転を心がけてください。"
+            advice = L10n.format(
+                "半径%dm以内の公式事故記録は僅少ですが、引き続き安全運転を心がけてください。",
+                Int(radiusMeters)
+            )
         }
 
         return AreaDangerAssessment(

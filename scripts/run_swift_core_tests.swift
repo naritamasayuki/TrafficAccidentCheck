@@ -38,7 +38,10 @@ struct CoreTestRunner {
         let center = CLLocationCoordinate2D(latitude: 35.681236, longitude: 139.767125)
         let nearby = store.recordsNear(coordinate: center, radiusMeters: 500.0)
         let assessment = DangerAnalyzer.evaluate(center: center, accidentsInRadius: nearby, allSNSReports: [])
-        let hotspots = DangerAnalyzer.detectHotspots(from: records)
+        var hotspotFilter = AccidentFilter()
+        hotspotFilter.maxVisibleRecords = 10_000
+        let (allTokyoRecords, _) = store.queryRecords(in: tokyoBox, filter: hotspotFilter)
+        let hotspots = DangerAnalyzer.detectHotspots(from: allTokyoRecords)
         assert(assessment.score >= 0 && assessment.score <= 100, "危険度スコア範囲外")
         assert(!hotspots.isEmpty, "ホットスポットが検出されませんでした")
         print("[OK] 正常系: 危険度診断成功 (スコア: \(assessment.score)/100, ランク: \(assessment.level.rawValue), ホットスポット: \(hotspots.count)箇所)")

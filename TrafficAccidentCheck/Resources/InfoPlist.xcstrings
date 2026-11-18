@@ -1,0 +1,122 @@
+{
+  "sourceLanguage": "ja",
+  "strings": {
+    "CFBundleDisplayName": {
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "事故マップ"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accident Map"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "事故地图"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "事故地圖"
+          }
+        }
+      }
+    },
+    "NSLocationWhenInUseUsageDescription": {
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "現在地をマップ上に表示して移動に合わせて自動追従し、周辺100mの交通事故危険度スコアの算出および事故多発地点に接近した際の音声アナウンス・警告を行うために位置情報を使用します。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uses your location to display your position on the map, evaluate nearby traffic accident risk, and provide voice alerts when approaching accident hotspots."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用于在地图上显示您的当前位置、评估周边交通事故风险，并在接近事故多发地点时提供语音播报与警告。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用於在地圖上顯示您的目前位置、評估周邊交通事故風險，並在接近事故多發地點時提供語音播報與警告。"
+          }
+        }
+      }
+    },
+    "NSLocationAlwaysAndWhenInUseUsageDescription": {
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "バックグラウンドでも現在地を監視し、事故多発地点へ接近した際に音声アナウンスや通知でお知らせするために位置情報を使用します。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uses your location in the background to alert you with voice and notifications when approaching traffic accident hotspots even when the screen is off."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用于在后台持续监测位置，即使在熄屏状态下接近事故多发地点时也能通过语音和通知提醒您。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用於在背景持續監測位置，即使在關閉螢幕狀態下接近事故多發地點時也能透過語音和通知提醒您。"
+          }
+        }
+      }
+    },
+    "NSUserTrackingUsageDescription": {
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "お客様に関連性の高い広告を表示し、交通事故マップおよび音声安全案内機能を無料で提供し続けるために広告識別子を使用します（許可しない場合でもアプリの全機能をご利用いただけます）。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uses advertising identifiers to show relevant ads so we can continue providing the traffic accident map and voice alert features for free."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用于向您展示相关性更高的广告，以免费为您提供交通事故地图及语音安全提示功能（即使不允许也可使用全部功能）。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用於向您顯示相關性更高的廣告，以免費為您提供交通事故地圖及語音安全提示功能（即使不允許也可使用全部功能）。"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

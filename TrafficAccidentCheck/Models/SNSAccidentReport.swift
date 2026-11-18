@@ -23,7 +23,7 @@ struct SNSAccidentReport: Identifiable, Codable, Equatable, Sendable {
 
     /// UI上で必ず明示する出典・未確認ラベル
     var sourceAttributionBadgeText: String {
-        "出典: \(sourceName) [未確認情報]"
+        L10n.format("出典: %@ [未確認情報]", sourceName)
     }
 }
 
