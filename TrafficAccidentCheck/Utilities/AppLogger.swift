@@ -4,7 +4,7 @@ import os
 /// アプリ全体で使用する構造化ログ出力ユーティリティ。
 /// エラー発生時に原因究明を迅速に行えるよう、カテゴリ別のロガーと詳細出力を提供する。
 enum AppLogger {
-    private static let subsystem = Bundle.main.bundleIdentifier ?? "com.naritamasayuki.TrafficAccidentCheck"
+    private static let subsystem = Bundle.main.bundleIdentifier ?? "com.example.TrafficAccidentCheck"
 
     /// データ読み込み・バイナリ解析用ロガー
     static let data = Logger(subsystem: subsystem, category: "DataStore")
