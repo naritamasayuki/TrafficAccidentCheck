@@ -15,6 +15,8 @@
 		<string>location</string>
 		<string>audio</string>
 	</array>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>バックグラウンドでも現在地を監視し、事故多発地点へ接近した際に音声アナウンスや通知でお知らせするために位置情報を使用します。</string>
 	<key>NSUserTrackingUsageDescription</key>
 	<string>お客様に関連性の高い広告を表示し、交通事故マップおよび音声安全案内機能を無料で提供し続けるために広告識別子を使用します（許可しない場合でもアプリの全機能をご利用いただけます）。</string>
 	<key>SKAdNetworkItems</key>

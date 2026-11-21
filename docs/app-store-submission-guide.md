@@ -125,3 +125,4 @@ git push gdrive main
 | GitHub Pages で「Upgrade or make this repository public」と出る | リポジトリが Private になっている（無料プラン制限） | リポジトリを Public に変更するか、公開用別リポジトリで Pages を有効化 |
 | Xcode / git で Push 時に認証エラーが出る | 古い credential helper が残っている／トークン未設定 | `~/.gitconfig` の壊れた `credential.helper` を確認し、Xcode Settings → Accounts で GitHub アカウント（Classic PAT: `repo`, `admin:public_key`, `user`）でサインイン |
 | アップロードしたビルドが App Store Connect に表示されない | Apple 側での処理中 | 5〜15 分ほど待ってからページを再読み込みする |
+| 提出後に「バイナリが無効（ITMS-91064: Invalid tracking information）」になる | `PrivacyInfo.xcprivacy` で `NSPrivacyTracking` が `true` なのに `NSPrivacyTrackingDomains` が空配列（`<array/>`）になっている | アプリ本体の `PrivacyInfo.xcprivacy` では `NSPrivacyTracking` を `<false/>` に設定する（AdMob 等の SDK 側のマニフェストは SDK 内に同梱されているため本体側は `false` で良い） |
