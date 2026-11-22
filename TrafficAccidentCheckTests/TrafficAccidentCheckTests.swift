@@ -441,6 +441,47 @@ final class TrafficAccidentCheckTests: XCTestCase {
         XCTAssertTrue(reloadedManager.isBackgroundModeEnabled, "バックグラウンドモード設定はUserDefaultsに永続化されるべき")
     }
 
+    func testBugReportDraftBuildsWebFeedbackAndMailtoURLs() throws {
+        var draft = BugReportDraft()
+        draft.category = .featureRequest
+        draft.detailText = "ダークモード対応を強化してほしい"
+        draft.includeDiagnostics = true
+
+        let webURL = try XCTUnwrap(
+            draft.buildWebFeedbackURL(
+                appVersion: "1.0 (3)",
+                osVersion: "iOS 18.0",
+                filter: AccidentFilter(),
+                isGoogleMapsConfigured: false
+            )
+        )
+        let webComponents = try XCTUnwrap(URLComponents(url: webURL, resolvingAgainstBaseURL: false))
+        XCTAssertEqual(webComponents.host, "naritamasayuki.github.io")
+        XCTAssertEqual(webComponents.path, "/TrafficAccidentCheck/feedback.html")
+        XCTAssertEqual(
+            webComponents.queryItems?.first(where: { $0.name == "category" })?.value,
+            BugReportCategory.featureRequest.rawValue
+        )
+        XCTAssertTrue(
+            webComponents.queryItems?.first(where: { $0.name == "body" })?.value?.contains("ダークモード対応を強化してほしい") == true
+        )
+
+        let mailURL = try XCTUnwrap(
+            draft.buildMailtoURL(
+                appVersion: "1.0 (3)",
+                osVersion: "iOS 18.0",
+                filter: AccidentFilter(),
+                isGoogleMapsConfigured: false
+            )
+        )
+        let mailComponents = try XCTUnwrap(URLComponents(url: mailURL, resolvingAgainstBaseURL: false))
+        XCTAssertEqual(mailComponents.scheme, "mailto")
+        XCTAssertEqual(mailComponents.path, BugReportDraft.supportEmailAddress)
+        XCTAssertTrue(
+            mailComponents.queryItems?.first(where: { $0.name == "subject" })?.value?.contains("機能改善のご要望") == true
+        )
+    }
+
     private func makeSampleRecord(id: Int, severityCode: UInt8, deaths: UInt8, injuries: UInt8) -> AccidentRecord {
         AccidentRecord(
             id: id,

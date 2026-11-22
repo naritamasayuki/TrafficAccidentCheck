@@ -68,16 +68,30 @@ struct BugReportSheetView: View {
                 }
 
                 Section("送信・報告方法（無料）") {
-                    if let issueURL = draft.buildGitHubIssueURL(
+                    if let webURL = draft.buildWebFeedbackURL(
                         appVersion: appVersionString,
                         osVersion: osVersionString,
                         filter: filter,
                         isGoogleMapsConfigured: isGoogleMapsConfigured
                     ) {
                         Button {
-                            openURL(issueURL)
+                            openURL(webURL)
                         } label: {
-                            Label("開発元サポート窓口（GitHub Issue）で報告する", systemImage: "paperplane.fill")
+                            Label("Web フォームから送る（ログイン不要）", systemImage: "safari.fill")
+                                .font(.subheadline.bold())
+                        }
+                    }
+
+                    if let mailURL = draft.buildMailtoURL(
+                        appVersion: appVersionString,
+                        osVersion: osVersionString,
+                        filter: filter,
+                        isGoogleMapsConfigured: isGoogleMapsConfigured
+                    ) {
+                        Button {
+                            openURL(mailURL)
+                        } label: {
+                            Label("メールアプリで直接送信する", systemImage: "envelope.fill")
                                 .font(.subheadline.bold())
                         }
                     }
@@ -95,6 +109,21 @@ struct BugReportSheetView: View {
                     } label: {
                         Label("報告テキストをクリップボードにコピー", systemImage: "doc.on.doc")
                             .font(.subheadline)
+                    }
+
+                    if let issueURL = draft.buildGitHubIssueURL(
+                        appVersion: appVersionString,
+                        osVersion: osVersionString,
+                        filter: filter,
+                        isGoogleMapsConfigured: isGoogleMapsConfigured
+                    ) {
+                        Button {
+                            openURL(issueURL)
+                        } label: {
+                            Label("GitHub Issue で報告する（開発者向け）", systemImage: "paperplane")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
                     }
 
                     if isShowingCopiedBanner {

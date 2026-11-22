@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ご要望・不具合報告 | 事故マップ - 交通事故チェック</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f6f8fa;
+      --card: #ffffff;
+      --text: #1f2328;
+      --muted: #59636e;
+      --border: #d0d7de;
+      --accent: #0969da;
+      --accent-hover: #0550ae;
+      --success: #1a7f37;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0d1117;
+        --card: #161b22;
+        --text: #e6edf3;
+        --muted: #8b949e;
+        --border: #30363d;
+        --accent: #58a6ff;
+        --accent-hover: #79c0ff;
+        --success: #3fb950;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 24px 16px 48px;
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+    }
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+    .lang-bar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    .lang-btn {
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text);
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .lang-btn.active {
+      background: var(--accent);
+      color: #ffffff;
+      border-color: var(--accent);
+      font-weight: 600;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px;
+      margin-bottom: 18px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+    h1 {
+      font-size: 22px;
+      margin: 0 0 8px;
+    }
+    h2 {
+      font-size: 16px;
+      margin: 0 0 12px;
+    }
+    p.lead {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      margin: 14px 0 6px;
+    }
+    select, input, textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+      font-family: inherit;
+    }
+    textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+    .btn-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 11px 16px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      background: var(--card);
+      color: var(--text);
+    }
+    .btn.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #ffffff;
+    }
+    .btn.primary:hover {
+      background: var(--accent-hover);
+    }
+    .status {
+      margin-top: 10px;
+      font-size: 13px;
+      color: var(--success);
+      font-weight: 600;
+      min-height: 20px;
+    }
+    .note {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+    .google-form-wrap {
+      display: none;
+    }
+    .google-form-wrap.enabled {
+      display: block;
+    }
+    iframe.gform {
+      width: 100%;
+      min-height: 680px;
+      border: 0;
+      border-radius: 10px;
+      background: #ffffff;
+    }
+    footer {
+      text-align: center;
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 24px;
+    }
+    footer a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="lang-bar" role="tablist" aria-label="Language">
+      <button class="lang-btn active" data-lang="ja">日本語</button>
+      <button class="lang-btn" data-lang="en">English</button>
+      <button class="lang-btn" data-lang="zh-Hans">简体中文</button>
+      <button class="lang-btn" data-lang="zh-Hant">繁體中文</button>
+    </div>
+
+    <div class="card">
+      <h1 id="title">ご要望・不具合報告フォーム</h1>
+      <p class="lead" id="lead">
+        「事故マップ - 交通事故チェック」をご利用いただきありがとうございます。機能の改善アイデア、使いにくい点、不具合（バグ）などをお気軽にお知らせください。
+      </p>
+    </div>
+
+    <!-- Google フォーム連携エリア（GOOGLE_FORM_URL を設定すると自動で表示されます） -->
+    <div class="card google-form-wrap" id="googleFormCard">
+      <h2 id="gformHeading">Web フォームから送信（ログイン不要・約1分）</h2>
+      <p class="note" id="gformNote">ログイン不要でそのまま送信できます。いただいたご意見は開発チームがすべて確認いたします。</p>
+      <div class="btn-row" style="margin-bottom: 12px;">
+        <a class="btn primary" id="openGoogleFormBtn" href="#" target="_blank" rel="noopener noreferrer">別画面でフォームを開く</a>
+      </div>
+      <iframe class="gform" id="googleFormFrame" title="Feedback Form"></iframe>
+    </div>
+
+    <!-- クイック送信フォーム（メール作成＆テキストコピー） -->
+    <div class="card">
+      <h2 id="quickHeading">メール / テキストで報告する</h2>
+
+      <label for="appName" id="lblApp">対象アプリ</label>
+      <input id="appName" type="text" value="事故マップ - 交通事故チェック" />
+
+      <label for="category" id="lblCategory">カテゴリ</label>
+      <select id="category">
+        <option value="機能改善のご要望">機能改善のご要望 / Feature Request</option>
+        <option value="地図・ピンの表示不具合">地図・ピンの表示不具合 / Map Display Issue</option>
+        <option value="現在地追従・音声アナウンス">現在地追従・音声アナウンス / Location & Voice</option>
+        <option value="SNS・未確認速報の誤報・不具合">SNS・未確認速報の誤報・不具合 / SNS Data</option>
+        <option value="アプリの動作・強制終了">アプリの動作・強制終了 / Crash or Performance</option>
+        <option value="その他">その他 / Other</option>
+      </select>
+
+      <label for="detail" id="lblDetail">ご要望・不具合の詳細</label>
+      <textarea id="detail" placeholder="例：〇〇機能を追加してほしい、〇〇画面でうまく動作しない等"></textarea>
+
+      <label for="envInfo" id="lblEnv">アプリバージョン・端末環境（任意）</label>
+      <input id="envInfo" type="text" placeholder="例：v1.0 (3) / iOS 18" />
+
+      <div class="btn-row">
+        <button class="btn primary" type="button" id="sendMailBtn">メールアプリで送信する</button>
+        <button class="btn" type="button" id="copyBtn">報告テキストをコピー</button>
+        <a class="btn" id="githubBtn" href="https://github.com/naritamasayuki/TrafficAccidentCheck/issues/new" target="_blank" rel="noopener noreferrer">GitHub Issue（開発者向け）</a>
+      </div>
+      <div class="status" id="statusMsg"></div>
+      <p class="note" id="privacyNote">
+        ※ お送りいただいた内容はアプリの改善および不具合修正のみに使用します。個人情報や正確な現在地座標は入力しないでください。
+      </p>
+    </div>
+
+    <footer>
+      <a href="./privacy-policy.html" id="privacyLink">プライバシーポリシー / Privacy Policy</a>
+    </footer>
+  </div>
+
+  <script>
+    // =========================================================================
+    // Google フォームを作成したら、下の URL を貼り付けるだけで自動連携されます
+    // 例: "https://docs.google.com/forms/d/e/1FAIpQLSe.../viewform"
+    // =========================================================================
+    const GOOGLE_FORM_URL = "";
+    const SUPPORT_EMAIL = "doronko.narunaru@gmail.com";
+
+    const I18N = {
+      ja: {
+        title: "ご要望・不具合報告フォーム",
+        lead: "「事故マップ - 交通事故チェック」をご利用いただきありがとうございます。機能の改善アイデア、使いにくい点、不具合（バグ）などをお気軽にお知らせください。",
+        gformHeading: "Web フォームから送信（ログイン不要・約1分）",
+        gformNote: "ログイン不要でそのまま送信できます。いただいたご意見は開発チームがすべて確認いたします。",
+        openGform: "別画面でフォームを開く",
+        quickHeading: "メール / テキストで報告する",
+        lblApp: "対象アプリ",
+        lblCategory: "カテゴリ",
+        lblDetail: "ご要望・不具合の詳細",
+        placeholderDetail: "例：〇〇機能を追加してほしい、〇〇画面でうまく動作しない等",
+        lblEnv: "アプリバージョン・端末環境（任意）",
+        sendMail: "メールアプリで送信する",
+        copy: "報告テキストをコピー",
+        copied: "報告テキストをコピーしました！",
+        privacyNote: "※ お送りいただいた内容はアプリの改善および不具合修正のみに使用します。個人情報や正確な現在地座標は入力しないでください。",
+        privacyLink: "プライバシーポリシー"
+      },
+      en: {
+        title: "Feedback & Bug Report",
+        lead: "Thank you for using Traffic Accident Check. Feel free to share feature requests, usability feedback, or bug reports.",
+        gformHeading: "Submit via Web Form (No Login Required)",
+        gformNote: "You can submit without signing in. Our team reviews every message carefully.",
+        openGform: "Open Form in New Tab",
+        quickHeading: "Send via Email / Copy Report",
+        lblApp: "App Name",
+        lblCategory: "Category",
+        lblDetail: "Details (Feature Request / Bug Report)",
+        placeholderDetail: "e.g. Feature suggestion, issue steps, or screen where the problem occurred",
+        lblEnv: "App Version / OS (Optional)",
+        sendMail: "Send via Email App",
+        copy: "Copy Report Text",
+        copied: "Report text copied to clipboard!",
+        privacyNote: "Your feedback is used solely to improve the app and fix bugs. Please do not include personal information or exact GPS coordinates.",
+        privacyLink: "Privacy Policy"
+      },
+      "zh-Hans": {
+        title: "意见反馈与问题报告",
+        lead: "感谢使用事故地图（交通事故检查）。欢迎随时反馈功能建议、使用体验或程序错误（Bug）。",
+        gformHeading: "通过网页表单提交（无需登录）",
+        gformNote: "无需登录即可直接提交，开发团队会认真查看每一条反馈。",
+        openGform: "在新标签页中打开表单",
+        quickHeading: "通过邮件或复制文本发送",
+        lblApp: "应用名称",
+        lblCategory: "分类",
+        lblDetail: "详细内容",
+        placeholderDetail: "例如：希望新增的功能，或遇到问题的具体操作步骤",
+        lblEnv: "应用版本 / 系统环境（可选）",
+        sendMail: "使用邮件应用发送",
+        copy: "复制报告内容",
+        copied: "已复制报告内容！",
+        privacyNote: "您提交的内容仅用于改进应用和修复问题，请勿填写个人隐私或精确位置坐标。",
+        privacyLink: "隐私政策"
+      },
+      "zh-Hant": {
+        title: "意見回饋與問題回報",
+        lead: "感謝使用事故地圖（交通事故檢查）。歡迎隨時提供功能建議、使用心得或程式錯誤（Bug）。",
+        gformHeading: "透過網頁表單提交（免登入）",
+        gformNote: "無需登入即可直接送出，開發團隊會仔細檢視每一則回饋。",
+        openGform: "在新分頁開啟表單",
+        quickHeading: "透過電子郵件或複製文字回報",
+        lblApp: "應用程式名稱",
+        lblCategory: "分類",
+        lblDetail: "詳細內容",
+        placeholderDetail: "例如：希望新增的功能，或發生問題的操作步驟",
+        lblEnv: "應用程式版本 / 系統環境（選填）",
+        sendMail: "使用郵件 App 傳送",
+        copy: "複製回報內容",
+        copied: "已複製回報內容！",
+        privacyNote: "您提供的內容僅用於改善應用程式與修復問題，請勿填寫個人隱私或精確座標。",
+        privacyLink: "隱私權政策"
+      }
+    };
+
+    let currentLang = "ja";
+
+    function applyLanguage(lang) {
+      currentLang = I18N[lang] ? lang : "en";
+      const t = I18N[currentLang];
+      document.documentElement.lang = currentLang;
+      document.getElementById("title").textContent = t.title;
+      document.getElementById("lead").textContent = t.lead;
+      document.getElementById("gformHeading").textContent = t.gformHeading;
+      document.getElementById("gformNote").textContent = t.gformNote;
+      document.getElementById("openGoogleFormBtn").textContent = t.openGform;
+      document.getElementById("quickHeading").textContent = t.quickHeading;
+      document.getElementById("lblApp").textContent = t.lblApp;
+      document.getElementById("lblCategory").textContent = t.lblCategory;
+      document.getElementById("lblDetail").textContent = t.lblDetail;
+      document.getElementById("detail").placeholder = t.placeholderDetail;
+      document.getElementById("lblEnv").textContent = t.lblEnv;
+      document.getElementById("sendMailBtn").textContent = t.sendMail;
+      document.getElementById("copyBtn").textContent = t.copy;
+      document.getElementById("privacyNote").textContent = t.privacyNote;
+      document.getElementById("privacyLink").textContent = t.privacyLink;
+
+      document.querySelectorAll(".lang-btn").forEach((btn) => {
+        btn.classList.toggle("active", btn.dataset.lang === currentLang);
+      });
+    }
+
+    function buildReportPayload() {
+      const app = document.getElementById("appName").value.trim() || "TrafficAccidentCheck";
+      const category = document.getElementById("category").value;
+      const detail = document.getElementById("detail").value.trim() || "（詳細未入力）";
+      const env = document.getElementById("envInfo").value.trim();
+
+      const lines = [
+        `【アプリ】${app}`,
+        `【カテゴリ】${category}`,
+        "",
+        "【詳細】",
+        detail
+      ];
+      if (env) {
+        lines.push("", "--- 環境情報 ---", env);
+      }
+      return {
+        subject: `[${app}] ${category}`,
+        body: lines.join("\n")
+      };
+    }
+
+    function initFromQuery() {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("app")) document.getElementById("appName").value = params.get("app");
+      if (params.get("category")) {
+        const sel = document.getElementById("category");
+        const val = params.get("category");
+        for (const opt of sel.options) {
+          if (opt.value === val) {
+            sel.value = val;
+            break;
+          }
+        }
+      }
+      if (params.get("body")) document.getElementById("detail").value = params.get("body");
+      const ver = params.get("version");
+      const os = params.get("os");
+      if (ver || os) {
+        document.getElementById("envInfo").value = [ver ? `App: ${ver}` : "", os ? `OS: ${os}` : ""].filter(Boolean).join(" / ");
+      }
+
+      const browserLang = (params.get("lang") || navigator.language || "ja").toLowerCase();
+      if (browserLang.startsWith("ja")) applyLanguage("ja");
+      else if (browserLang.startsWith("zh-tw") || browserLang.startsWith("zh-hk") || browserLang.includes("hant")) applyLanguage("zh-Hant");
+      else if (browserLang.startsWith("zh")) applyLanguage("zh-Hans");
+      else applyLanguage("en");
+    }
+
+    if (GOOGLE_FORM_URL) {
+      const wrap = document.getElementById("googleFormCard");
+      const frame = document.getElementById("googleFormFrame");
+      const openBtn = document.getElementById("openGoogleFormBtn");
+      wrap.classList.add("enabled");
+      openBtn.href = GOOGLE_FORM_URL;
+      const embedUrl = GOOGLE_FORM_URL.includes("?")
+        ? `${GOOGLE_FORM_URL}&embedded=true`
+        : `${GOOGLE_FORM_URL}?embedded=true`;
+      frame.src = embedUrl;
+    }
+
+    document.querySelectorAll(".lang-btn").forEach((btn) => {
+      btn.addEventListener("click", () => applyLanguage(btn.dataset.lang));
+    });
+
+    document.getElementById("sendMailBtn").addEventListener("click", () => {
+      const { subject, body } = buildReportPayload();
+      const mailto = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      window.location.href = mailto;
+    });
+
+    document.getElementById("copyBtn").addEventListener("click", async () => {
+      const { body } = buildReportPayload();
+      try {
+        await navigator.clipboard.writeText(body);
+        document.getElementById("statusMsg").textContent = I18N[currentLang].copied;
+      } catch (_) {
+        window.prompt("Copy:", body);
+      }
+    });
+
+    initFromQuery();
+  </script>
+</body>
+</html>

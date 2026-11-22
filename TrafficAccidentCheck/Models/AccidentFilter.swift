@@ -265,6 +265,8 @@ enum BugReportCategory: String, CaseIterable, Identifiable, Codable, Sendable {
 /// バグ報告フォームの入力下書きおよびURL生成モデル（自動保存対応）。
 struct BugReportDraft: Equatable, Codable, Sendable {
     static let storageKey = "TrafficAccidentCheck.BugReportDraft.v1"
+    static let webFeedbackBaseURL = "https://naritamasayuki.github.io/TrafficAccidentCheck/feedback.html"
+    static let supportEmailAddress = "doronko.narunaru@gmail.com"
     static let githubIssuesBaseURL = "https://github.com/naritamasayuki/TrafficAccidentCheck/issues/new"
 
     var category: BugReportCategory = .mapDisplay
@@ -316,6 +318,58 @@ struct BugReportDraft: Equatable, Codable, Sendable {
             ])
         }
         return lines.joined(separator: "\n")
+    }
+
+    /// ログイン不要の Web フィードバックフォーム URL を生成する（カテゴリ・本文・環境情報を事前入力）。
+    func buildWebFeedbackURL(
+        appVersion: String,
+        osVersion: String,
+        filter: AccidentFilter,
+        isGoogleMapsConfigured: Bool
+    ) -> URL? {
+        let body = buildFormattedBody(
+            appVersion: appVersion,
+            osVersion: osVersion,
+            filter: filter,
+            isGoogleMapsConfigured: isGoogleMapsConfigured
+        )
+
+        var components = URLComponents(string: Self.webFeedbackBaseURL)
+        components?.queryItems = [
+            URLQueryItem(name: "app", value: "事故マップ - 交通事故チェック"),
+            URLQueryItem(name: "category", value: category.rawValue),
+            URLQueryItem(name: "version", value: appVersion),
+            URLQueryItem(name: "os", value: osVersion),
+            URLQueryItem(name: "body", value: body)
+        ]
+        return components?.url
+    }
+
+    /// 標準メールアプリで直接送信するための `mailto:` URL を生成する。
+    func buildMailtoURL(
+        appVersion: String,
+        osVersion: String,
+        filter: AccidentFilter,
+        isGoogleMapsConfigured: Bool
+    ) -> URL? {
+        let shortSummary = String(detailText.trimmingCharacters(in: .whitespacesAndNewlines).prefix(30))
+        let titleSuffix = shortSummary.isEmpty ? "アプリ内からの報告" : shortSummary
+        let subject = "[事故マップ][\(category.rawValue)] \(titleSuffix)"
+        let body = buildFormattedBody(
+            appVersion: appVersion,
+            osVersion: osVersion,
+            filter: filter,
+            isGoogleMapsConfigured: isGoogleMapsConfigured
+        )
+
+        var components = URLComponents()
+        components.scheme = "mailto"
+        components.path = Self.supportEmailAddress
+        components.queryItems = [
+            URLQueryItem(name: "subject", value: subject),
+            URLQueryItem(name: "body", value: body)
+        ]
+        return components.url
     }
 
     /// GitHub Issue 作成画面の URL を生成する（タイトルと本文をクエリパラメータで自動入力）。
