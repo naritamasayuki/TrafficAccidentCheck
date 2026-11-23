@@ -509,6 +509,40 @@ final class TrafficAccidentCheckTests: XCTestCase {
         )
     }
 
+    func testSafetyGoodsAmazonAffiliateURLGeneration() throws {
+        let item = try XCTUnwrap(SafetyGoodsRecommendation.allItems.first)
+
+        // 日本ロケール: amazon.co.jp + 共通アソシエイトID (shirokumacamp-22)
+        let jpURL = try XCTUnwrap(item.amazonSearchURL(locale: Locale(identifier: "ja_JP")))
+        let jpComponents = try XCTUnwrap(URLComponents(url: jpURL, resolvingAgainstBaseURL: false))
+        XCTAssertEqual(jpComponents.scheme, "https")
+        XCTAssertEqual(jpComponents.host, "www.amazon.co.jp")
+        XCTAssertEqual(jpComponents.path, "/s")
+        XCTAssertEqual(
+            jpComponents.queryItems?.first(where: { $0.name == "tag" })?.value,
+            "shirokumacamp-22"
+        )
+        XCTAssertEqual(
+            jpComponents.queryItems?.first(where: { $0.name == "k" })?.value,
+            item.japaneseKeyword
+        )
+
+        // 海外ロケール: amazon.com (日本用 tag なし)
+        let usURL = try XCTUnwrap(item.amazonSearchURL(locale: Locale(identifier: "en_US")))
+        let usComponents = try XCTUnwrap(URLComponents(url: usURL, resolvingAgainstBaseURL: false))
+        XCTAssertEqual(usComponents.host, "www.amazon.com")
+        XCTAssertNil(usComponents.queryItems?.first(where: { $0.name == "tag" }))
+        XCTAssertEqual(
+            usComponents.queryItems?.first(where: { $0.name == "k" })?.value,
+            item.globalKeyword
+        )
+
+        // 夜間事故のときは反射ベストが優先レコメンドに含まれること
+        let nightRecord = makeSampleRecord(id: 99, severityCode: 2, deaths: 0, injuries: 1)
+        let recommended = SafetyGoodsRecommendation.recommended(for: nightRecord)
+        XCTAssertEqual(recommended.count, 2)
+    }
+
     private func makeSampleRecord(id: Int, severityCode: UInt8, deaths: UInt8, injuries: UInt8) -> AccidentRecord {
         AccidentRecord(
             id: id,

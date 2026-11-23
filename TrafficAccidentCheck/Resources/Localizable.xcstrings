@@ -9193,6 +9193,383 @@
           }
         }
       }
+    },
+    "事故予防のおすすめ交通安全グッズ": {
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "事故予防のおすすめ交通安全グッズ"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recommended Road Safety Gear"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "推荐交通安全用品"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "推薦交通安全用品"
+          }
+        }
+      }
+    },
+    "おすすめ交通安全グッズ（Amazon）": {
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "おすすめ交通安全グッズ（Amazon）"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recommended Safety Gear (Amazon)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "推荐交通安全用品（Amazon）"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "推薦交通安全用品（Amazon）"
+          }
+        }
+      }
+    },
+    "※PR：Amazonのアソシエイトとして、当アプリは適格販売により収入を得ています。": {
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "※PR：Amazonのアソシエイトとして、当アプリは適格販売により収入を得ています。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PR: As an Amazon Associate, this app earns from qualifying purchases."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "※PR：作为 Amazon 联盟成员，本应用可从符合条件的购买中获得收益。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "※PR：作為 Amazon 聯盟成員，本應用程式可從符合條件的購買中獲得收益。"
+          }
+        }
+      }
+    },
+    "前後2カメラ ドライブレコーダー": {
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "前後2カメラ ドライブレコーダー"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dual Front & Rear Dash Cam"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "前后双镜头行车记录仪"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "前後雙鏡頭行車記錄器"
+          }
+        }
+      }
+    },
+    "万が一の衝突・あおり運転の証拠記録に": {
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "万が一の衝突・あおり運転の証拠記録に"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Records evidence in case of collisions or tailgating"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "记录碰撞或恶意别车等突发状况证据"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "記錄碰撞或惡意逼車等突發狀況證據"
+          }
+        }
+      }
+    },
+    "夜間用 反射ベスト・LED リフレクター": {
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "夜間用 反射ベスト・LED リフレクター"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reflective Safety Vest & LED Reflector"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "夜间反光背心 / LED 反光挂件"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "夜間反光背心 / LED 反光吊飾"
+          }
+        }
+      }
+    },
+    "夜間や雨天の歩行・自転車・停車時の視認性向上に": {
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "夜間や雨天の歩行・自転車・停車時の視認性向上に"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Improves visibility at night or in rain while walking, cycling, or stopped"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "提升夜间及雨天步行、骑行或停车时的可见度"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "提升夜間及雨天步行、騎行或停車時的可見度"
+          }
+        }
+      }
+    },
+    "車載用 緊急脱出ハンマー": {
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "車載用 緊急脱出ハンマー"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Car Emergency Escape Hammer"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "车载安全锤（带割刀）"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "車用緊急破窗錘（附安全帶割刀）"
+          }
+        }
+      }
+    },
+    "シートベルトカッター付き・水没や閉じ込め対策に": {
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "シートベルトカッター付き・水没や閉じ込め対策に"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "With seatbelt cutter for flooding or entrapment emergencies"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "配备安全带割刀，应对涉水或被困车内紧急情况"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "配備安全帶割刀，應對泡水或受困車內緊急狀況"
+          }
+        }
+      }
+    },
+    "三角表示板・LED 非常信号灯": {
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "三角表示板・LED 非常信号灯"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Warning Triangle & LED Road Flare"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "三角警示牌与 LED 应急警示灯"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "三角警示牌與 LED 緊急警示燈"
+          }
+        }
+      }
+    },
+    "高速道路や夜間の緊急停車時の二次事故防止に": {
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "高速道路や夜間の緊急停車時の二次事故防止に"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Helps prevent secondary accidents during highway or night breakdowns"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "防止高速公路或夜间紧急停车时发生二次事故"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "防止高速公路或夜間緊急停車時發生二次事故"
+          }
+        }
+      }
+    },
+    "自転車用 高輝度ライト・ヘルメット": {
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自転車用 高輝度ライト・ヘルメット"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "High-Brightness Bike Light & Helmet"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自行车高亮度车灯与头盔"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自行車高亮度車燈與安全帽"
+          }
+        }
+      }
+    },
+    "通勤・通学時の見落とし防止と頭部保護に": {
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "通勤・通学時の見落とし防止と頭部保護に"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prevents blind-spot collisions and protects your head on commutes"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "提升通勤通学可见度并保护头部安全"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "提升通勤通學可見度並保護頭部安全"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

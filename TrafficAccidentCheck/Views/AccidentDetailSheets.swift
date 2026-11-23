@@ -88,6 +88,27 @@ struct AccidentDetailSheet: View {
                     )
                 }
 
+                Section {
+                    ForEach(SafetyGoodsRecommendation.recommended(for: record)) { item in
+                        if let url = item.amazonSearchURL() {
+                            SafetyGoodsLinkRow(item: item, url: url)
+                        }
+                    }
+                } header: {
+                    HStack(spacing: 6) {
+                        Text("事故予防のおすすめ交通安全グッズ")
+                        Text("PR")
+                            .font(.caption2.bold())
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 1)
+                            .background(Color.orange.opacity(0.2))
+                            .foregroundStyle(.orange)
+                            .clipShape(Capsule())
+                    }
+                } footer: {
+                    Text("※PR：Amazonのアソシエイトとして、当アプリは適格販売により収入を得ています。")
+                }
+
                 Section("位置・出典情報") {
                     detailRow(
                         label: "緯度・経度",
@@ -368,6 +389,27 @@ struct FilterSheet: View {
                     }
                 }
 
+                Section {
+                    ForEach(SafetyGoodsRecommendation.allItems) { item in
+                        if let url = item.amazonSearchURL() {
+                            SafetyGoodsLinkRow(item: item, url: url)
+                        }
+                    }
+                } header: {
+                    HStack(spacing: 6) {
+                        Text("おすすめ交通安全グッズ（Amazon）")
+                        Text("PR")
+                            .font(.caption2.bold())
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 1)
+                            .background(Color.orange.opacity(0.2))
+                            .foregroundStyle(.orange)
+                            .clipShape(Capsule())
+                    }
+                } footer: {
+                    Text("※PR：Amazonのアソシエイトとして、当アプリは適格販売により収入を得ています。")
+                }
+
                 Section("サポート・設定リセット") {
                     if let onOpenBugReport {
                         Button {
@@ -437,6 +479,39 @@ struct FilterSheet: View {
             } message: {
                 Text("この操作を実行すると、保存されている絞り込み設定が初期化されます。")
             }
+        }
+    }
+}
+
+/// Amazon アソシエイトの交通安全グッズリンク行（PR 表記付き）。
+private struct SafetyGoodsLinkRow: View {
+    let item: SafetyGoodsRecommendation
+    let url: URL
+
+    var body: some View {
+        Link(destination: url) {
+            HStack(spacing: 12) {
+                Image(systemName: item.systemImage)
+                    .font(.body)
+                    .foregroundStyle(.orange)
+                    .frame(width: 24)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(LocalizedStringKey(item.titleKey))
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.primary)
+                    Text(LocalizedStringKey(item.subtitleKey))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+
+                Image(systemName: "arrow.up.right.square")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.vertical, 2)
         }
     }
 }
