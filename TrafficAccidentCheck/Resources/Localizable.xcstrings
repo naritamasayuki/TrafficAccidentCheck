@@ -9077,6 +9077,122 @@
           }
         }
       }
+    },
+    "⚠️ 要注意ポイントに接近中": {
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "⚠️ 要注意ポイントに接近中"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "⚠️ Approaching High-Caution Point"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "⚠️ 正在接近重点注意路段"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "⚠️ 正在接近重點注意路段"
+          }
+        }
+      }
+    },
+    "要注意ポイントです。この先%dメートル付近、直近1年間で死亡事故を含む%d件の事故が発生しました。": {
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "要注意ポイントです。この先%dメートル付近、直近1年間で死亡事故を含む%d件の事故が発生しました。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "High caution point. Within %d meters ahead, %d accidents including fatal ones occurred in the past year."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重点注意路段。前方约%d米处，近一年内发生了%d起含死亡事故的交通事故。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重點注意路段。前方約%d公尺處，近一年內發生了%d起含死亡事故的交通事故。"
+          }
+        }
+      }
+    },
+    "要注意ポイントです。この先%dメートル付近、直近1年間で%d件の事故が発生しました。": {
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "要注意ポイントです。この先%dメートル付近、直近1年間で%d件の事故が発生しました。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "High caution point. Within %d meters ahead, %d accidents occurred in the past year."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重点注意路段。前方约%d米处，近一年内发生了%d起交通事故。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重點注意路段。前方約%d公尺處，近一年內發生了%d起交通事故。"
+          }
+        }
+      }
+    },
+    "この先%dメートル付近、事故多発地点です。直近1年間で%d件の事故が発生しました。": {
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "この先%dメートル付近、事故多発地点です。直近1年間で%d件の事故が発生しました。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accident hotspot within %d meters ahead. %d accidents occurred here in the past year."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "前方约%d米处为事故多发路段，近一年内发生了%d起交通事故。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "前方約%d公尺處為事故多發路段，近一年內發生了%d起交通事故。"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

@@ -59,8 +59,22 @@ struct AccidentHotspot: Identifiable, Equatable, Sendable {
             lhs.coordinate.longitude == rhs.coordinate.longitude
     }
 
+    /// 特に事故が集中している「要注意ポイント」と判定する直近1年間の件数しきい値。
+    static let highAlertThreshold = 10
+
+    /// 死亡事故を含む、または直近1年間で10件以上の事故が発生している要注意ポイントかどうか。
+    var isHighAlertHotspot: Bool {
+        fatalCount > 0 || accidentCount >= Self.highAlertThreshold
+    }
+
     var alertTitle: String {
-        fatalCount > 0 ? L10n.tr("⚠️ 死亡事故発生エリアに接近中") : L10n.tr("⚠️ 事故多発地点に接近中")
+        if fatalCount > 0 {
+            return L10n.tr("⚠️ 死亡事故発生エリアに接近中")
+        }
+        if accidentCount >= Self.highAlertThreshold {
+            return L10n.tr("⚠️ 要注意ポイントに接近中")
+        }
+        return L10n.tr("⚠️ 事故多発地点に接近中")
     }
 
     var alertBody: String {

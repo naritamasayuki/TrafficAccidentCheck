@@ -197,12 +197,28 @@ final class LocationAndAlertManager: NSObject, ObservableObject {
         }
     }
 
-    /// 事故多発地点への接近時に読み上げる簡潔な音声アナウンス文言を生成する。
+    /// 事故多発地点への接近時に読み上げる音声アナウンス文言を生成する。
+    /// 特に事故が多い地区（直近1年間で10件以上、または死亡事故あり）では「要注意ポイントです。」を先頭に付与し、直近1年間の発生件数を読み上げる。
     nonisolated static func warningMessage(for hotspot: AccidentHotspot, distanceMeters: Int) -> String {
         if hotspot.fatalCount > 0 {
-            return L10n.format("この先%dメートル付近、死亡事故を含む多発地点です。ご注意ください。", distanceMeters)
+            return L10n.format(
+                "要注意ポイントです。この先%dメートル付近、直近1年間で死亡事故を含む%d件の事故が発生しました。",
+                distanceMeters,
+                hotspot.accidentCount
+            )
         }
-        return L10n.format("この先%dメートル付近、事故多発地点です。ご注意ください。", distanceMeters)
+        if hotspot.isHighAlertHotspot {
+            return L10n.format(
+                "要注意ポイントです。この先%dメートル付近、直近1年間で%d件の事故が発生しました。",
+                distanceMeters,
+                hotspot.accidentCount
+            )
+        }
+        return L10n.format(
+            "この先%dメートル付近、事故多発地点です。直近1年間で%d件の事故が発生しました。",
+            distanceMeters,
+            hotspot.accidentCount
+        )
     }
 
     /// 日本語音声合成（AVSpeechSynthesizer）で事故現場への接近アナウンスを読み上げる。

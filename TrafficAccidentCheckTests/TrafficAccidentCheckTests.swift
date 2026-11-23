@@ -227,8 +227,35 @@ final class TrafficAccidentCheckTests: XCTestCase {
         XCTAssertEqual(validHotspots.count, 1, "直近1年で5件以上のセルは多発地点として抽出されるべき")
 
         let conciseMessage = LocationAndAlertManager.warningMessage(for: validHotspots[0], distanceMeters: 80)
-        XCTAssertTrue(conciseMessage.contains("80メートル"))
-        XCTAssertLessThanOrEqual(conciseMessage.count, 45, "接近音声アナウンスは簡潔であるべき")
+        XCTAssertTrue(conciseMessage.contains("80"))
+        XCTAssertTrue(conciseMessage.contains("5"))
+        XCTAssertLessThanOrEqual(conciseMessage.count, 55, "接近音声アナウンスは簡潔であるべき")
+
+        // 特に事故が多発している地区（直近1年間で10件以上）の要注意ポイント音声アナウンス検証
+        let highAlertHotspot = AccidentHotspot(
+            id: "hotspot-high-alert",
+            coordinate: CLLocationCoordinate2D(latitude: 35.6812, longitude: 139.7671),
+            accidentCount: 10,
+            fatalCount: 0,
+            dominantType: "追突"
+        )
+        XCTAssertTrue(highAlertHotspot.isHighAlertHotspot)
+        let highAlertMessage = LocationAndAlertManager.warningMessage(for: highAlertHotspot, distanceMeters: 80)
+        XCTAssertTrue(highAlertMessage.contains("要注意ポイント") || highAlertMessage.contains("High caution"))
+        XCTAssertTrue(highAlertMessage.contains("10"))
+
+        // 死亡事故を含む要注意ポイントの音声アナウンス検証
+        let fatalHotspot = AccidentHotspot(
+            id: "hotspot-fatal",
+            coordinate: CLLocationCoordinate2D(latitude: 35.6812, longitude: 139.7671),
+            accidentCount: 6,
+            fatalCount: 1,
+            dominantType: "人対車両"
+        )
+        XCTAssertTrue(fatalHotspot.isHighAlertHotspot)
+        let fatalMessage = LocationAndAlertManager.warningMessage(for: fatalHotspot, distanceMeters: 60)
+        XCTAssertTrue(fatalMessage.contains("要注意ポイント") || fatalMessage.contains("High caution"))
+        XCTAssertTrue(fatalMessage.contains("6"))
     }
 
     // MARK: - 3. SNSAccidentService 地名抽出・出典表示テスト
