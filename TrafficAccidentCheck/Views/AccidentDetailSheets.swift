@@ -515,3 +515,295 @@ private struct SafetyGoodsLinkRow: View {
         }
     }
 }
+
+/// 周辺安全診断結果をSNSシェア用の1枚カード画像として生成・共有するシート。
+struct SafetyReportShareSheet: View {
+    let locationTitle: String
+    let assessment: AreaDangerAssessment
+    let periodLabel: String
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var renderedImage: UIImage?
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 16) {
+                    shareCardContent
+                        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                        .shadow(color: .black.opacity(0.15), radius: 8, y: 4)
+
+                    if let image = renderedImage {
+                        let swiftUIImage = Image(uiImage: image)
+                        ShareLink(
+                            item: swiftUIImage,
+                            preview: SharePreview(
+                                L10n.format("交通安全診断: %@", locationTitle),
+                                image: swiftUIImage
+                            )
+                        ) {
+                            Label("この診断カードを画像でシェアする", systemImage: "square.and.arrow.up")
+                                .font(.headline)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 12)
+                        }
+                        .buttonStyle(.borderedProminent)
+                    } else {
+                        ProgressView("シェア画像を生成中...")
+                    }
+
+                    Text("※ LINE・X・Instagram やご家族への通学路・引っ越し先の共有にご活用ください。")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                .padding()
+            }
+            .navigationTitle("診断カードをシェア")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("閉じる") { dismiss() }
+                }
+            }
+            .task {
+                renderShareImage()
+            }
+        }
+    }
+
+    private var accentColor: Color {
+        switch assessment.level {
+        case .safe: return .green
+        case .caution: return .orange
+        case .warning: return .red
+        case .critical: return .purple
+        }
+    }
+
+    private var radiusText: String {
+        let r = Int(assessment.radiusMeters)
+        return r >= 1000 ? "\(r / 1000)km" : "\(r)m"
+    }
+
+    private var shareCardContent: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Label("事故マップ - 交通安全診断", systemImage: "shield.lefthalf.filled")
+                    .font(.caption.bold())
+                    .foregroundStyle(.white.opacity(0.9))
+                Spacer()
+                Text(periodLabel)
+                    .font(.caption2.bold())
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(.white.opacity(0.2), in: Capsule())
+                    .foregroundStyle(.white)
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(locationTitle)
+                    .font(.title3.bold())
+                    .foregroundStyle(.white)
+                    .lineLimit(2)
+                Text(L10n.format("半径%@以内の危険度診断", radiusText))
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.85))
+            }
+
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("危険度ランク")
+                        .font(.caption2)
+                        .foregroundStyle(.white.opacity(0.8))
+                    Text(assessment.level.localizedName)
+                        .font(.title2.bold())
+                        .foregroundStyle(.white)
+                }
+                Spacer()
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text("リスクスコア")
+                        .font(.caption2)
+                        .foregroundStyle(.white.opacity(0.8))
+                    Text("\(assessment.score) / 100")
+                        .font(.title2.monospacedDigit().bold())
+                        .foregroundStyle(.white)
+                }
+            }
+            .padding(12)
+            .background(.black.opacity(0.22), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+
+            HStack(spacing: 10) {
+                statTile(title: "人身事故", value: "\(assessment.totalAccidents)")
+                statTile(title: "死亡事故", value: "\(assessment.fatalAccidents)")
+                statTile(title: "夜間割合", value: "\(Int((assessment.nightAccidentRatio * 100).rounded()))%")
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Label(assessment.currentTimeSlotLabel, systemImage: "clock.fill")
+                    .font(.caption2.bold())
+                    .foregroundStyle(.white)
+                Text(assessment.currentTimeSlotAdvice)
+                    .font(.caption2)
+                    .foregroundStyle(.white.opacity(0.92))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(.white.opacity(0.14), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+
+            Text("出典: 警察庁 交通事故統計オープンデータ")
+                .font(.caption2)
+                .foregroundStyle(.white.opacity(0.75))
+        }
+        .padding(18)
+        .frame(width: 340)
+        .background(
+            LinearGradient(
+                colors: [accentColor.opacity(0.92), Color.black.opacity(0.88)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        )
+    }
+
+    private func statTile(title: String, value: String) -> some View {
+        VStack(spacing: 2) {
+            Text(LocalizedStringKey(title))
+                .font(.caption2)
+                .foregroundStyle(.white.opacity(0.8))
+            Text(value)
+                .font(.headline.monospacedDigit().bold())
+                .foregroundStyle(.white)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 8)
+        .background(.white.opacity(0.14), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+    }
+
+    @MainActor
+    private func renderShareImage() {
+        let renderer = ImageRenderer(content: shareCardContent)
+        renderer.scale = 3.0
+        renderedImage = renderer.uiImage
+    }
+}
+
+/// お気に入り保存した地点を危険度スコア順に比較・ジャンプできるシート。
+struct SavedLocationsSheet: View {
+    @Binding var savedLocations: [SavedLocationItem]
+    let onSelectLocation: (SavedLocationItem) -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var isShowingFirstClearAlert = false
+    @State private var isShowingSecondClearAlert = false
+
+    private var sortedLocations: [SavedLocationItem] {
+        savedLocations.sorted { lhs, rhs in
+            if lhs.score != rhs.score { return lhs.score > rhs.score }
+            return lhs.savedAt > rhs.savedAt
+        }
+    }
+
+    var body: some View {
+        NavigationStack {
+            Group {
+                if savedLocations.isEmpty {
+                    ContentUnavailableView(
+                        "お気に入り地点はまだありません",
+                        systemImage: "star.slash",
+                        description: Text("地図上部の危険度バーを開き「お気に入り保存」を押すと、自宅や通学路・引っ越し候補の危険度を一覧で比較できます。")
+                    )
+                } else {
+                    List {
+                        Section {
+                            ForEach(sortedLocations) { item in
+                                Button {
+                                    onSelectLocation(item)
+                                    dismiss()
+                                } label: {
+                                    HStack(spacing: 12) {
+                                        Image(systemName: item.dangerLevel.symbolName)
+                                            .font(.title3)
+                                            .foregroundStyle(colorFor(item.dangerLevel))
+
+                                        VStack(alignment: .leading, spacing: 3) {
+                                            Text(item.name)
+                                                .font(.subheadline.bold())
+                                                .foregroundStyle(.primary)
+                                            let r = Int(item.radiusMeters)
+                                            let radiusText = r >= 1000 ? "\(r / 1000)km" : "\(r)m"
+                                            Text("半径\(radiusText)・人身\(item.totalAccidents)件（死亡\(item.fatalAccidents)件）")
+                                                .font(.caption)
+                                                .foregroundStyle(.secondary)
+                                        }
+
+                                        Spacer()
+
+                                        VStack(alignment: .trailing, spacing: 2) {
+                                            Text("\(item.score)/100")
+                                                .font(.subheadline.monospacedDigit().bold())
+                                                .foregroundStyle(colorFor(item.dangerLevel))
+                                            Text(item.dangerLevel.localizedName)
+                                                .font(.caption2)
+                                                .foregroundStyle(.secondary)
+                                        }
+                                    }
+                                    .padding(.vertical, 2)
+                                }
+                            }
+                            .onDelete { offsets in
+                                let idsToDelete = offsets.map { sortedLocations[$0].id }
+                                savedLocations.removeAll { idsToDelete.contains($0.id) }
+                                SavedLocationStore.save(savedLocations)
+                            }
+                        } header: {
+                            Text("危険度スコアが高い順に表示（タップで地図へ移動）")
+                        }
+
+                        Section {
+                            Button(role: .destructive) {
+                                isShowingFirstClearAlert = true
+                            } label: {
+                                Label("お気に入り地点をすべて削除", systemImage: "trash")
+                            }
+                        }
+                    }
+                }
+            }
+            .navigationTitle("お気に入り地点・危険度比較")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("閉じる") { dismiss() }
+                }
+            }
+            .alert("お気に入り地点をすべて削除しますか？", isPresented: $isShowingFirstClearAlert) {
+                Button("いいえ", role: .cancel) {}
+                Button("はい", role: .destructive) {
+                    isShowingSecondClearAlert = true
+                }
+            } message: {
+                Text("保存されているすべての地点データが削除されます。")
+            }
+            .alert("最終確認：本当にすべて削除しますか？", isPresented: $isShowingSecondClearAlert) {
+                Button("いいえ", role: .cancel) {}
+                Button("削除する", role: .destructive) {
+                    savedLocations.removeAll()
+                    SavedLocationStore.save(savedLocations)
+                }
+            } message: {
+                Text("削除したお気に入り地点は元に戻せません。")
+            }
+        }
+    }
+
+    private func colorFor(_ level: DangerLevel) -> Color {
+        switch level {
+        case .safe: return .green
+        case .caution: return .orange
+        case .warning: return .red
+        case .critical: return .purple
+        }
+    }
+}

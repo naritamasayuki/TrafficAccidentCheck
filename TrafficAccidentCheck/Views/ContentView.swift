@@ -1,4 +1,5 @@
 import CoreLocation
+import StoreKit
 import SwiftUI
 
 /// メイン画面ビュー。
@@ -6,6 +7,7 @@ import SwiftUI
 struct ContentView: View {
     let isGoogleMapsConfigured: Bool
 
+    @Environment(\.requestReview) private var requestReview
     @StateObject private var locationManager = LocationAndAlertManager()
     @State private var dataStore: AccidentDataStore = AccidentDataStore.emptyStore()
     @State private var dataLoadErrorMessage: String?
@@ -36,6 +38,11 @@ struct ContentView: View {
     @State private var isShowingFilterSheet = false
     @State private var isShowingBugReportSheet = false
     @State private var isShowingDangerDetail = false
+    @State private var savedLocations: [SavedLocationItem] = SavedLocationStore.load()
+    @State private var isShowingSavedLocationsSheet = false
+    @State private var isShowingShareReportSheet = false
+    @State private var isShowingSaveLocationAlert = false
+    @State private var newLocationName = ""
 
     private let snsService = SNSAccidentService()
 
@@ -115,6 +122,41 @@ struct ContentView: View {
         }
         .sheet(isPresented: $isShowingBugReportSheet) {
             BugReportSheetView(filter: filter, isGoogleMapsConfigured: isGoogleMapsConfigured)
+        }
+        .sheet(isPresented: $isShowingSavedLocationsSheet) {
+            SavedLocationsSheet(savedLocations: $savedLocations) { item in
+                locationManager.isFollowingUser = false
+                jumpToCoordinate(CLLocationCoordinate2D(latitude: item.latitude, longitude: item.longitude))
+                recordEngagementAction()
+            }
+        }
+        .sheet(isPresented: $isShowingShareReportSheet) {
+            if let assessment = dangerAssessment {
+                let targetCoord = locationManager.isFollowingUser
+                    ? (locationManager.userCoordinate ?? cameraCenter)
+                    : cameraCenter
+                let defaultTitle = L10n.format(
+                    "北緯 %.4f°, 東経 %.4f° 周辺",
+                    targetCoord.latitude,
+                    targetCoord.longitude
+                )
+                SafetyReportShareSheet(
+                    locationTitle: defaultTitle,
+                    assessment: assessment,
+                    periodLabel: filter.yearFilter.displayText(latestYear: dataStore.latestYear)
+                )
+            }
+        }
+        .alert("お気に入り地点を保存", isPresented: $isShowingSaveLocationAlert) {
+            TextField("例：自宅周辺、〇〇小学校通学路", text: $newLocationName)
+            Button("キャンセル", role: .cancel) {
+                newLocationName = ""
+            }
+            Button("保存") {
+                saveCurrentLocationSnapshot()
+            }
+        } message: {
+            Text("現在の診断地点に名前をつけて保存すると、他エリアと危険度スコアを比較できます。")
         }
         .onChange(of: filter) { _, newFilter in
             newFilter.save()
@@ -219,6 +261,9 @@ extension ContentView {
                     withAnimation(.spring(duration: 0.25)) {
                         isShowingDangerDetail.toggle()
                     }
+                    if isShowingDangerDetail {
+                        recordEngagementAction()
+                    }
                 } label: {
                     Image(systemName: isShowingDangerDetail ? "chevron.up.circle.fill" : "info.circle.fill")
                         .font(.title3)
@@ -231,6 +276,19 @@ extension ContentView {
                 Text(assessment.safetyAdvice)
                     .font(.caption)
                     .foregroundStyle(.primary)
+
+                HStack(alignment: .top, spacing: 6) {
+                    Image(systemName: "clock.badge.exclamationmark.fill")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                    Text(assessment.currentTimeSlotAdvice)
+                        .font(.caption)
+                        .foregroundStyle(.primary)
+                }
+                .padding(8)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+
                 HStack {
                     Label("最多類型: \(assessment.dominantAccidentType)", systemImage: "car.2.fill")
                     Spacer()
@@ -238,6 +296,29 @@ extension ContentView {
                 }
                 .font(.caption2)
                 .foregroundStyle(.secondary)
+
+                HStack(spacing: 8) {
+                    Button {
+                        newLocationName = ""
+                        isShowingSaveLocationAlert = true
+                    } label: {
+                        Label("お気に入り保存", systemImage: "star.fill")
+                            .font(.caption.bold())
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 6)
+                    }
+                    .buttonStyle(.bordered)
+
+                    Button {
+                        isShowingShareReportSheet = true
+                    } label: {
+                        Label("診断カードをシェア", systemImage: "square.and.arrow.up")
+                            .font(.caption.bold())
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 6)
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
             }
         }
         .padding(12)
@@ -277,6 +358,14 @@ extension ContentView {
                     activeColor: locationManager.isBackgroundModeEnabled ? .indigo : nil
                 ) {
                     locationManager.isBackgroundModeEnabled.toggle()
+                }
+
+                pillButton(
+                    title: L10n.format("お気に入り(%d)", savedLocations.count),
+                    icon: "star.fill",
+                    activeColor: savedLocations.isEmpty ? nil : .orange
+                ) {
+                    isShowingSavedLocationsSheet = true
                 }
 
                 pillButton(
@@ -557,6 +646,38 @@ extension ContentView {
             maxLongitude: coord.longitude + 0.00125
         )
         refreshMapData()
+    }
+
+    private func saveCurrentLocationSnapshot() {
+        guard let assessment = dangerAssessment else { return }
+        let targetCoord = locationManager.isFollowingUser
+            ? (locationManager.userCoordinate ?? cameraCenter)
+            : cameraCenter
+        let trimmed = newLocationName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let displayName = trimmed.isEmpty
+            ? L10n.format("保存地点 #%d", savedLocations.count + 1)
+            : trimmed
+        let item = SavedLocationItem(
+            name: displayName,
+            latitude: targetCoord.latitude,
+            longitude: targetCoord.longitude,
+            score: assessment.score,
+            levelRawValue: assessment.level.rawValue,
+            totalAccidents: assessment.totalAccidents,
+            fatalAccidents: assessment.fatalAccidents,
+            radiusMeters: assessment.radiusMeters
+        )
+        savedLocations.insert(item, at: 0)
+        SavedLocationStore.save(savedLocations)
+        newLocationName = ""
+        recordEngagementAction()
+    }
+
+    private func recordEngagementAction() {
+        if ReviewPromptManager.recordActionAndShouldRequestReview() {
+            requestReview()
+        }
+        AdMobService.shared.recordActionAndPresentInterstitialIfReady()
     }
 
     private func colorForDanger(_ level: DangerLevel) -> Color {

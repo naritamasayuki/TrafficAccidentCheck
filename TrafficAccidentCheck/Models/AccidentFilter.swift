@@ -397,3 +397,69 @@ struct BugReportDraft: Equatable, Codable, Sendable {
         return components?.url
     }
 }
+
+/// お気に入り保存された地点と、その地点の安全診断スナップショット（危険度比較用）。
+struct SavedLocationItem: Identifiable, Equatable, Codable, Sendable {
+    let id: UUID
+    var name: String
+    let latitude: Double
+    let longitude: Double
+    let score: Int
+    let levelRawValue: String
+    let totalAccidents: Int
+    let fatalAccidents: Int
+    let radiusMeters: Double
+    let savedAt: Date
+
+    init(
+        id: UUID = UUID(),
+        name: String,
+        latitude: Double,
+        longitude: Double,
+        score: Int,
+        levelRawValue: String,
+        totalAccidents: Int,
+        fatalAccidents: Int,
+        radiusMeters: Double,
+        savedAt: Date = Date()
+    ) {
+        self.id = id
+        self.name = name
+        self.latitude = latitude
+        self.longitude = longitude
+        self.score = score
+        self.levelRawValue = levelRawValue
+        self.totalAccidents = totalAccidents
+        self.fatalAccidents = fatalAccidents
+        self.radiusMeters = radiusMeters
+        self.savedAt = savedAt
+    }
+
+    var dangerLevel: DangerLevel {
+        DangerLevel(rawValue: levelRawValue) ?? .caution
+    }
+}
+
+/// お気に入り地点の永続化ストア（操作ごとに UserDefaults へ自動保存）。
+enum SavedLocationStore {
+    static let storageKey = "TrafficAccidentCheck.SavedLocations.v1"
+
+    static func load(defaults: UserDefaults = .standard) -> [SavedLocationItem] {
+        guard let data = defaults.data(forKey: storageKey) else { return [] }
+        do {
+            return try JSONDecoder().decode([SavedLocationItem].self, from: data)
+        } catch {
+            AppLogger.logError(AppLogger.data, context: "お気に入り地点の読み込み失敗", error: error)
+            return []
+        }
+    }
+
+    static func save(_ items: [SavedLocationItem], to defaults: UserDefaults = .standard) {
+        do {
+            let data = try JSONEncoder().encode(items)
+            defaults.set(data, forKey: storageKey)
+        } catch {
+            AppLogger.logError(AppLogger.data, context: "お気に入り地点の保存失敗", error: error)
+        }
+    }
+}

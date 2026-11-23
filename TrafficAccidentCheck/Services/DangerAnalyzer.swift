@@ -20,6 +20,29 @@ enum DangerLevel: String, Sendable {
     }
 }
 
+/// 現在時刻に応じた時間帯区分（リアルタイム危険アドバイス用）。
+enum CurrentTimeSlot: String, CaseIterable, Sendable {
+    case morning = "朝（6〜9時）"
+    case daytime = "日中（10〜15時）"
+    case evening = "夕方（16〜19時）"
+    case night = "夜間（20〜5時）"
+
+    var localizedName: String { L10n.tr(rawValue) }
+
+    static func from(hour: Int) -> CurrentTimeSlot {
+        switch hour {
+        case 6...9: return .morning
+        case 10...15: return .daytime
+        case 16...19: return .evening
+        default: return .night
+        }
+    }
+
+    func matches(hour: Int) -> Bool {
+        Self.from(hour: hour) == self
+    }
+}
+
 /// 指定座標（現在地またはマップ中心）周辺の危険度診断結果。
 struct AreaDangerAssessment: Equatable, Sendable {
     /// 評価対象の半径（メートル）
@@ -40,6 +63,12 @@ struct AreaDangerAssessment: Equatable, Sendable {
     let dominantAccidentType: String
     /// ドライバー・歩行者向けの注意アドバイス
     let safetyAdvice: String
+    /// 現在の時間帯ラベル（例：「夕方（16〜19時）」）
+    let currentTimeSlotLabel: String
+    /// 現在の時間帯に発生した半径内の事故件数
+    let currentTimeSlotAccidents: Int
+    /// 現在の時間帯に特化した危険アドバイス
+    let currentTimeSlotAdvice: String
 }
 
 /// 事故多発地点（ブラックスポット / 接近通知対象地点）。
@@ -94,7 +123,9 @@ enum DangerAnalyzer {
         center: CLLocationCoordinate2D,
         accidentsInRadius: [AccidentRecord],
         allSNSReports: [SNSAccidentReport],
-        radiusMeters: Double = 100.0
+        radiusMeters: Double = 100.0,
+        referenceDate: Date = Date(),
+        calendar: Calendar = .current
     ) -> AreaDangerAssessment {
         let total = accidentsInRadius.count
         let fatalCount = accidentsInRadius.filter(\.isFatal).count
@@ -156,6 +187,40 @@ enum DangerAnalyzer {
             )
         }
 
+        // 現在の時間帯に特化した事故件数・最多類型を集計
+        let currentHour = calendar.component(.hour, from: referenceDate)
+        let timeSlot = CurrentTimeSlot.from(hour: currentHour)
+        let sameSlotRecords = accidentsInRadius.filter { timeSlot.matches(hour: Int($0.hour)) }
+        let slotCount = sameSlotRecords.count
+        var slotTypeHistogram: [UInt8: Int] = [:]
+        for record in sameSlotRecords {
+            slotTypeHistogram[record.accidentTypeCode, default: 0] += 1
+        }
+        let slotDominantType = slotTypeHistogram.max(by: { $0.value < $1.value })
+            .map { AccidentCodebook.accidentTypeName(for: $0.key) } ?? dominantType
+
+        let timeSlotAdvice: String
+        if slotCount >= 5 {
+            timeSlotAdvice = L10n.format(
+                "現在の時間帯（%@）は周辺で%d件の事故が集中しています（最多: %@）。特に慎重な運転・横断を心がけてください。",
+                timeSlot.localizedName,
+                slotCount,
+                slotDominantType
+            )
+        } else if slotCount > 0 {
+            timeSlotAdvice = L10n.format(
+                "現在の時間帯（%@）に周辺で%d件の事故記録があります（最多: %@）。周囲の確認を徹底しましょう。",
+                timeSlot.localizedName,
+                slotCount,
+                slotDominantType
+            )
+        } else {
+            timeSlotAdvice = L10n.format(
+                "現在の時間帯（%@）の周辺事故記録は0件ですが、見通しの悪い場所では引き続きご注意ください。",
+                timeSlot.localizedName
+            )
+        }
+
         return AreaDangerAssessment(
             radiusMeters: radiusMeters,
             score: score,
@@ -165,7 +230,10 @@ enum DangerAnalyzer {
             nightAccidentRatio: nightRatio,
             nearbySNSCount: nearbySNS,
             dominantAccidentType: dominantType,
-            safetyAdvice: advice
+            safetyAdvice: advice,
+            currentTimeSlotLabel: timeSlot.localizedName,
+            currentTimeSlotAccidents: slotCount,
+            currentTimeSlotAdvice: timeSlotAdvice
         )
     }
 

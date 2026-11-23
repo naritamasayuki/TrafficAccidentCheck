@@ -12,6 +12,14 @@ final class AdMobService: ObservableObject {
     private var hasStartedFlow = false
     let configuration: AdMobConfiguration
 
+    // 控えめなインタースティシャル広告管理（頻度制限・クールダウン付き）
+    private var interstitialAd: InterstitialAd?
+    private var isLoadingInterstitial = false
+    private var diagnosisActionCount = 0
+    private var lastInterstitialShownAt: Date?
+    private let interstitialIntervalCount = 3
+    private let interstitialCooldownSeconds: TimeInterval = 180
+
     private init() {
         self.configuration = AdMobConfiguration.current()
     }
@@ -51,8 +59,64 @@ final class AdMobService: ObservableObject {
         MobileAds.shared.start { status in
             let adapterCount = status.adapterStatusesByClassName.count
             AppLogger.ad.info("Google Mobile Ads SDK 初期化完了 (アダプタ数: \(adapterCount), テスト広告モード: \(self.configuration.isUsingTestAds))")
+            Task { @MainActor in
+                self.loadInterstitialIfNeeded()
+            }
         }
         isInitialized = true
+    }
+
+    /// インタースティシャル広告をバックグラウンドで事前読み込みする（失敗時もアプリ動作を妨げない）。
+    func loadInterstitialIfNeeded() {
+        guard isInitialized, interstitialAd == nil, !isLoadingInterstitial else { return }
+        isLoadingInterstitial = true
+        let unitID = configuration.interstitialUnitID
+
+        Task { @MainActor in
+            do {
+                let loaded = try await InterstitialAd.load(with: unitID, request: Request())
+                self.interstitialAd = loaded
+                AppLogger.ad.info("AdMob インタースティシャル広告の事前読み込みに成功しました")
+            } catch {
+                AppLogger.logError(AppLogger.ad, context: "AdMob インタースティシャル広告の読み込み失敗", error: error)
+            }
+            self.isLoadingInterstitial = false
+        }
+    }
+
+    /// 診断や地点移動などの区切りアクションを記録し、頻度条件を満たした場合のみ控えめにインタースティシャル広告を表示する。
+    func recordActionAndPresentInterstitialIfReady() {
+        diagnosisActionCount += 1
+        guard diagnosisActionCount % interstitialIntervalCount == 0 else { return }
+
+        let now = Date()
+        if let lastShown = lastInterstitialShownAt,
+           now.timeIntervalSince(lastShown) < interstitialCooldownSeconds {
+            return
+        }
+
+        guard let ad = interstitialAd,
+              let rootVC = Self.findKeyRootViewController(),
+              rootVC.presentedViewController == nil else {
+            loadInterstitialIfNeeded()
+            return
+        }
+
+        interstitialAd = nil
+        lastInterstitialShownAt = now
+        ad.present(from: rootVC)
+        AppLogger.ad.info("AdMob インタースティシャル広告を表示しました")
+        loadInterstitialIfNeeded()
+    }
+
+    private static func findKeyRootViewController() -> UIViewController? {
+        let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+        for scene in scenes {
+            if let root = scene.windows.first(where: \.isKeyWindow)?.rootViewController {
+                return root
+            }
+        }
+        return scenes.first?.windows.first?.rootViewController
     }
 
     /// iOS 14.5+ 向けの ATT（トラッキング許可）ダイアログを表示する。

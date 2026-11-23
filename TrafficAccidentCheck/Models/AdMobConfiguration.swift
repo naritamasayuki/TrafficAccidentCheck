@@ -7,11 +7,15 @@ struct AdMobConfiguration: Equatable, Sendable {
     static let officialTestAppID = "ca-app-pub-3940256099942544~1458002511"
     /// Google 公式の iOS テスト用アダプティブバナー広告ユニット ID
     static let officialTestBannerUnitID = "ca-app-pub-3940256099942544/2435281174"
+    /// Google 公式の iOS テスト用インタースティシャル広告ユニット ID
+    static let officialTestInterstitialUnitID = "ca-app-pub-3940256099942544/4411468910"
 
     /// 有効化された AdMob アプリ ID
     let appID: String
     /// 有効化されたバナー広告ユニット ID
     let bannerUnitID: String
+    /// 有効化されたインタースティシャル広告ユニット ID
+    let interstitialUnitID: String
     /// 現在テスト広告モードで動作しているかどうか
     let isUsingTestAds: Bool
 
@@ -19,27 +23,38 @@ struct AdMobConfiguration: Equatable, Sendable {
     /// - Parameters:
     ///   - rawAppID: `GADApplicationIdentifier` または環境変数の値
     ///   - rawBannerUnitID: `AdMobBannerUnitID` または環境変数の値
+    ///   - rawInterstitialUnitID: `AdMobInterstitialUnitID` または環境変数の値
     ///   - forceTestMode: `DEBUG` ビルド時など、強制的にテスト広告を使用する場合は `true`
     init(
         rawAppID: String?,
         rawBannerUnitID: String?,
+        rawInterstitialUnitID: String? = nil,
         forceTestMode: Bool
     ) {
         let cleanedAppID = rawAppID?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         let cleanedUnitID = rawBannerUnitID?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let cleanedInterstitialID = rawInterstitialUnitID?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
 
         let validAppID = Self.isValidAppID(cleanedAppID) ? cleanedAppID : Self.officialTestAppID
         self.appID = validAppID
 
         if forceTestMode {
             self.bannerUnitID = Self.officialTestBannerUnitID
+            self.interstitialUnitID = Self.officialTestInterstitialUnitID
             self.isUsingTestAds = true
-        } else if Self.isValidBannerUnitID(cleanedUnitID) {
-            self.bannerUnitID = cleanedUnitID
-            self.isUsingTestAds = (cleanedUnitID == Self.officialTestBannerUnitID)
         } else {
-            self.bannerUnitID = Self.officialTestBannerUnitID
-            self.isUsingTestAds = true
+            if Self.isValidBannerUnitID(cleanedUnitID) {
+                self.bannerUnitID = cleanedUnitID
+                self.isUsingTestAds = (cleanedUnitID == Self.officialTestBannerUnitID)
+            } else {
+                self.bannerUnitID = Self.officialTestBannerUnitID
+                self.isUsingTestAds = true
+            }
+            if Self.isValidBannerUnitID(cleanedInterstitialID) {
+                self.interstitialUnitID = cleanedInterstitialID
+            } else {
+                self.interstitialUnitID = Self.officialTestInterstitialUnitID
+            }
         }
     }
 
@@ -49,6 +64,8 @@ struct AdMobConfiguration: Equatable, Sendable {
         let plistAppID = bundle.object(forInfoDictionaryKey: "GADApplicationIdentifier") as? String
         let envUnitID = ProcessInfo.processInfo.environment["ADMOB_BANNER_UNIT_ID"]
         let plistUnitID = bundle.object(forInfoDictionaryKey: "AdMobBannerUnitID") as? String
+        let envInterstitialID = ProcessInfo.processInfo.environment["ADMOB_INTERSTITIAL_UNIT_ID"]
+        let plistInterstitialID = bundle.object(forInfoDictionaryKey: "AdMobInterstitialUnitID") as? String
 
         #if DEBUG
         let isDebug = true
@@ -59,6 +76,7 @@ struct AdMobConfiguration: Equatable, Sendable {
         return AdMobConfiguration(
             rawAppID: (envAppID?.isEmpty == false) ? envAppID : plistAppID,
             rawBannerUnitID: (envUnitID?.isEmpty == false) ? envUnitID : plistUnitID,
+            rawInterstitialUnitID: (envInterstitialID?.isEmpty == false) ? envInterstitialID : plistInterstitialID,
             forceTestMode: isDebug
         )
     }
@@ -209,5 +227,40 @@ struct SafetyGoodsRecommendation: Identifiable, Equatable, Sendable {
             return true
         }
         return false
+    }
+}
+
+/// App Store の評価依頼（`requestReview`）のタイミングを制御するマネージャ。
+/// ユーザーのストレスにならないよう、一定回数以上の利用と十分なクールダウン期間を設ける。
+struct ReviewPromptManager: Sendable {
+    static let actionCountKey = "TrafficAccidentCheck.ReviewActionCount.v1"
+    static let lastRequestedAtKey = "TrafficAccidentCheck.ReviewLastRequestedAt.v1"
+
+    /// 初回レビュー依頼を行うまでの最低アクション回数（診断詳細確認・お気に入り保存等）
+    static let minimumActionCount = 3
+    /// 再依頼までのクールダウン期間（90日）
+    static let cooldownInterval: TimeInterval = 90 * 24 * 60 * 60
+
+    /// 意味のある操作回数を1つ加算し、今レビュー依頼を表示すべきかどうかを返す。
+    @discardableResult
+    static func recordActionAndShouldRequestReview(
+        defaults: UserDefaults = .standard,
+        now: Date = Date()
+    ) -> Bool {
+        let nextCount = defaults.integer(forKey: actionCountKey) + 1
+        defaults.set(nextCount, forKey: actionCountKey)
+
+        guard nextCount >= minimumActionCount else { return false }
+
+        let lastTimestamp = defaults.double(forKey: lastRequestedAtKey)
+        if lastTimestamp > 0 {
+            let elapsed = now.timeIntervalSince1970 - lastTimestamp
+            if elapsed < cooldownInterval {
+                return false
+            }
+        }
+
+        defaults.set(now.timeIntervalSince1970, forKey: lastRequestedAtKey)
+        return true
     }
 }

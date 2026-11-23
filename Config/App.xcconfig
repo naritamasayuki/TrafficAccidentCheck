@@ -7,5 +7,6 @@ GOOGLE_MAPS_API_KEY =
 // 未設定時は Google 公式の iOS テスト用 AdMob ID が使用されます（クラッシュおよび規約違反防止）
 ADMOB_APP_ID = ca-app-pub-3940256099942544~1458002511
 ADMOB_BANNER_UNIT_ID = ca-app-pub-3940256099942544/2435281174
+ADMOB_INTERSTITIAL_UNIT_ID = ca-app-pub-3940256099942544/4411468910
 
 #include? "Secrets.xcconfig"

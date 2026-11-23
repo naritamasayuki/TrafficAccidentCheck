@@ -543,6 +543,90 @@ final class TrafficAccidentCheckTests: XCTestCase {
         XCTAssertEqual(recommended.count, 2)
     }
 
+    func testCurrentTimeSlotAdviceAndSavedLocationsAndReviewPrompt() throws {
+        // 1. 現在時間帯アドバイス（夕方17時指定）
+        var comps = DateComponents()
+        comps.year = 2026
+        comps.month = 11
+        comps.day = 23
+        comps.hour = 17
+        comps.minute = 30
+        let calendar = Calendar(identifier: .gregorian)
+        let eveningDate = try XCTUnwrap(calendar.date(from: comps))
+
+        let eveningRecords = (1...5).map { idx in
+            AccidentRecord(
+                id: 500 + idx,
+                latitude: 35.6812,
+                longitude: 139.7671,
+                year: 2025,
+                month: 5,
+                day: 1,
+                hour: 17,
+                minute: 10,
+                severityCode: 2,
+                deaths: 0,
+                injuries: 1,
+                weatherCode: 1,
+                dayNightCode: 21,
+                roadSurfaceCode: 1,
+                roadShapeCode: 1,
+                signalCode: 1,
+                accidentTypeCode: 21,
+                weekdayCode: 1,
+                holidayCode: 3,
+                partyACode: 3,
+                partyBCode: 3,
+                ageACode: 35,
+                ageBCode: 45,
+                prefectureCode: 13,
+                injuryACode: 2,
+                injuryBCode: 4
+            )
+        }
+        let assessment = DangerAnalyzer.evaluate(
+            center: CLLocationCoordinate2D(latitude: 35.6812, longitude: 139.7671),
+            accidentsInRadius: eveningRecords,
+            allSNSReports: [],
+            radiusMeters: 100.0,
+            referenceDate: eveningDate,
+            calendar: calendar
+        )
+        XCTAssertEqual(assessment.currentTimeSlotAccidents, 5)
+        XCTAssertTrue(assessment.currentTimeSlotAdvice.contains("5"))
+
+        // 2. お気に入り地点の永続化と読み込み
+        let suiteName = "TrafficAccidentCheckTests.SavedLocations.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let saved = SavedLocationItem(
+            name: "自宅周辺",
+            latitude: 35.6812,
+            longitude: 139.7671,
+            score: 48,
+            levelRawValue: DangerLevel.warning.rawValue,
+            totalAccidents: 12,
+            fatalAccidents: 0,
+            radiusMeters: 100
+        )
+        SavedLocationStore.save([saved], to: defaults)
+        let loaded = SavedLocationStore.load(defaults: defaults)
+        XCTAssertEqual(loaded.count, 1)
+        XCTAssertEqual(loaded.first?.name, "自宅周辺")
+        XCTAssertEqual(loaded.first?.dangerLevel, .warning)
+
+        // 3. レビュー促進マネージャ（3回目で発動、直後はクールダウンで抑制）
+        XCTAssertFalse(ReviewPromptManager.recordActionAndShouldRequestReview(defaults: defaults, now: eveningDate))
+        XCTAssertFalse(ReviewPromptManager.recordActionAndShouldRequestReview(defaults: defaults, now: eveningDate))
+        XCTAssertTrue(ReviewPromptManager.recordActionAndShouldRequestReview(defaults: defaults, now: eveningDate))
+        XCTAssertFalse(ReviewPromptManager.recordActionAndShouldRequestReview(defaults: defaults, now: eveningDate))
+
+        // 4. インタースティシャル広告設定（DEBUG/未設定時は公式テストIDへフォールバック）
+        let adConfig = AdMobConfiguration(rawAppID: nil, rawBannerUnitID: nil, rawInterstitialUnitID: nil, forceTestMode: false)
+        XCTAssertEqual(adConfig.interstitialUnitID, AdMobConfiguration.officialTestInterstitialUnitID)
+    }
+
     private func makeSampleRecord(id: Int, severityCode: UInt8, deaths: UInt8, injuries: UInt8) -> AccidentRecord {
         AccidentRecord(
             id: id,
