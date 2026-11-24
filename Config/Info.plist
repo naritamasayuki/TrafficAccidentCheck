@@ -15,7 +15,6 @@
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>location</string>
-		<string>audio</string>
 	</array>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>バックグラウンドでも現在地を監視し、事故多発地点へ接近した際に音声アナウンスや通知でお知らせするために位置情報を使用します。</string>
