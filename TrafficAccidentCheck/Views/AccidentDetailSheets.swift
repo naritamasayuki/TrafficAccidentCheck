@@ -205,7 +205,7 @@ struct SNSReportDetailSheet: View {
                     LabeledContent("推定場所", value: report.extractedLocation)
                     LabeledContent("推定分類", value: report.category)
                     LabeledContent("情報ソース", value: report.sourceName)
-                    LabeledContent("取得・投稿日時", value: report.postedAt)
+                    LabeledContent("取得・投稿日時", value: SNSAccidentService.relativeTimeText(for: report.postedAt))
                     LabeledContent(
                         "推定座標",
                         value: String(format: "%.4f, %.4f", report.latitude, report.longitude)
@@ -281,7 +281,7 @@ struct FilterSheet: View {
                     Toggle("事故現場接近時に音声アナウンスで警告する", isOn: $isVoiceAnnouncementEnabled)
                     Toggle("バックグラウンドモード（画面消灯中も案内を継続）", isOn: $isBackgroundModeEnabled)
                     if isBackgroundModeEnabled {
-                        Text("アプリを閉じた状態や画面消灯中も現在地を監視し、多発地点への接近を音声と通知でお知らせします（電池消費が増える場合があります）。")
+                        Text("アプリを開いたまま画面を消灯しても現在地を監視し、多発地点への接近を音声と通知でお知らせします（アプリを完全に終了した場合は動作しません）。")
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                     }

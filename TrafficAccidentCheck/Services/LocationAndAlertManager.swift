@@ -17,12 +17,20 @@ final class LocationAndAlertManager: NSObject, ObservableObject {
 
     /// 現在のユーザー位置座標
     @Published private(set) var userCoordinate: CLLocationCoordinate2D?
+    /// 現在の移動速度（m/s、不明または停止時は0）
+    @Published private(set) var currentSpeedMetersPerSecond: Double = 0
+    /// 現在の進行方向（度、無効時は nil）
+    private var currentCourseDegrees: Double?
     /// 位置情報が更新されるたびにインクリメントされるトリガー（マップ追従用）
     @Published private(set) var locationUpdateCount: Int = 0
     /// 初回測位が完了したかどうか
     @Published private(set) var hasInitialLocationFix: Bool = false
     /// 位置情報権限ステータス
     @Published private(set) var authorizationStatus: CLAuthorizationStatus = .notDetermined
+    /// 位置情報権限が拒否または制限されているかどうか
+    var isLocationDeniedOrRestricted: Bool {
+        authorizationStatus == .denied || authorizationStatus == .restricted
+    }
 
     /// 移動に合わせてマップを自動追従するかどうか
     @Published var isFollowingUser: Bool {
@@ -35,6 +43,9 @@ final class LocationAndAlertManager: NSObject, ObservableObject {
     @Published var isProximityAlertEnabled: Bool {
         didSet {
             UserDefaults.standard.set(isProximityAlertEnabled, forKey: Self.proximityAlertKey)
+            if isProximityAlertEnabled {
+                requestNotificationPermission()
+            }
         }
     }
 
@@ -55,6 +66,7 @@ final class LocationAndAlertManager: NSObject, ObservableObject {
             applyBackgroundLocationSetting()
             if isBackgroundModeEnabled {
                 requestPermissionsAndStart()
+                requestNotificationPermission()
             }
         }
     }
@@ -66,8 +78,12 @@ final class LocationAndAlertManager: NSObject, ObservableObject {
     private let speechSynthesizer = AVSpeechSynthesizer()
     private var monitoredHotspots: [AccidentHotspot] = []
     private var notifiedHotspotTimestamps: [String: Date] = [:]
+    private var lastGlobalAlertTimestamp: Date?
+    private var bannerDismissTask: Task<Void, Never>?
     /// 同一ホットスポットに対する再通知クールダウン秒数（15分）
     private let alertCooldownSeconds: TimeInterval = 900
+    /// 連続アラートの全体クールダウン秒数（15秒）
+    private let globalAlertCooldownSeconds: TimeInterval = 15
     /// 接近判定距離（メートル）
     private let triggerDistanceMeters: Double = 150.0
 
@@ -109,7 +125,8 @@ final class LocationAndAlertManager: NSObject, ObservableObject {
         AppLogger.location.info("バックグラウンドモード設定: \(self.isBackgroundModeEnabled ? "ON" : "OFF")")
     }
 
-    /// 位置情報とローカル通知の権限をリクエストし、現在地の測位とマップ追従を開始する。
+    /// 位置情報の権限のみをリクエストし、許可済みなら即座に測位を開始する。
+    /// 通知権限は接近警告ON時やユーザー操作時に別途リクエストし、初回起動時のダイアログ連発を防ぐ。
     func requestPermissionsAndStart() {
         authorizationStatus = locationManager.authorizationStatus
         switch authorizationStatus {
@@ -120,7 +137,6 @@ final class LocationAndAlertManager: NSObject, ObservableObject {
         default:
             break
         }
-        requestNotificationPermission()
     }
 
     /// 測位開始時にキャッシュ済み位置情報があれば即座に反映し、連続測位を開始する。
@@ -159,26 +175,36 @@ final class LocationAndAlertManager: NSObject, ObservableObject {
         }
     }
 
-    /// シミュレータやテスト用に任意の事故地点へ接近した際の判定・音声アナウンスを実行する。
+    /// サンプル再生・音量確認用。現在地座標は一切変更せず、バナー・通知・音声案内のみを実行する。
     func simulateApproach(to hotspot: AccidentHotspot) {
-        notifiedHotspotTimestamps.removeValue(forKey: hotspot.id)
-        if !monitoredHotspots.contains(where: { $0.id == hotspot.id }) {
-            monitoredHotspots.insert(hotspot, at: 0)
-        }
-        applyNewUserCoordinate(hotspot.coordinate)
+        presentHotspotAlert(hotspot, distanceMeters: 80, forceSpeak: true)
     }
 
     /// 指定座標がホットスポットの半径150m以内に入ったか判定し、該当すればバナー・通知・音声アナウンスを送出する。
     func evaluateProximity(at coordinate: CLLocationCoordinate2D) {
         guard isProximityAlertEnabled, !monitoredHotspots.isEmpty else { return }
 
-        let userLoc = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
         let now = Date()
+        if let lastGlobal = lastGlobalAlertTimestamp,
+           now.timeIntervalSince(lastGlobal) < globalAlertCooldownSeconds {
+            return
+        }
+
+        let userLoc = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
 
         for hotspot in monitoredHotspots {
             let spotLoc = CLLocation(latitude: hotspot.coordinate.latitude, longitude: hotspot.coordinate.longitude)
             let distance = userLoc.distance(from: spotLoc)
             guard distance <= triggerDistanceMeters else { continue }
+
+            // 移動中かつ進行方向が取得できている場合、すでに通り過ぎて背後に回った地点はスキップする
+            if let course = currentCourseDegrees, currentSpeedMetersPerSecond >= 2.0, distance > 25.0 {
+                let bearing = Self.bearingDegrees(from: coordinate, to: hotspot.coordinate)
+                let diff = abs(Self.normalizedAngleDifference(course, bearing))
+                if diff > 100.0 {
+                    continue
+                }
+            }
 
             if let lastNotified = notifiedHotspotTimestamps[hotspot.id],
                now.timeIntervalSince(lastNotified) < alertCooldownSeconds {
@@ -186,15 +212,45 @@ final class LocationAndAlertManager: NSObject, ObservableObject {
             }
 
             notifiedHotspotTimestamps[hotspot.id] = now
-            activeHotspotAlert = hotspot
+            lastGlobalAlertTimestamp = now
             let roundedDistance = max(10, Int((distance / 10.0).rounded() * 10))
-            sendLocalNotification(for: hotspot, distanceMeters: roundedDistance)
-            if isVoiceAnnouncementEnabled {
-                speakWarning(for: hotspot, distanceMeters: roundedDistance)
-            }
+            presentHotspotAlert(hotspot, distanceMeters: roundedDistance, forceSpeak: false)
             AppLogger.location.notice("事故多発地点への接近を検知・音声案内実行: \(hotspot.id) (距離 \(Int(distance))m)")
             break
         }
+    }
+
+    private func presentHotspotAlert(_ hotspot: AccidentHotspot, distanceMeters: Int, forceSpeak: Bool) {
+        activeHotspotAlert = hotspot
+        bannerDismissTask?.cancel()
+        bannerDismissTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 12_000_000_000)
+            if !Task.isCancelled, self.activeHotspotAlert?.id == hotspot.id {
+                self.activeHotspotAlert = nil
+            }
+        }
+        sendLocalNotification(for: hotspot, distanceMeters: distanceMeters)
+        if isVoiceAnnouncementEnabled || forceSpeak {
+            speakWarning(for: hotspot, distanceMeters: distanceMeters)
+        }
+    }
+
+    nonisolated static func bearingDegrees(from: CLLocationCoordinate2D, to: CLLocationCoordinate2D) -> Double {
+        let lat1 = from.latitude * .pi / 180.0
+        let lon1 = from.longitude * .pi / 180.0
+        let lat2 = to.latitude * .pi / 180.0
+        let lon2 = to.longitude * .pi / 180.0
+        let dLon = lon2 - lon1
+        let y = sin(dLon) * cos(lat2)
+        let x = cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(dLon)
+        let deg = atan2(y, x) * 180.0 / .pi
+        return fmod(deg + 360.0, 360.0)
+    }
+
+    nonisolated static func normalizedAngleDifference(_ a: Double, _ b: Double) -> Double {
+        var diff = fmod(b - a + 540.0, 360.0) - 180.0
+        if diff < -180.0 { diff += 360.0 }
+        return diff
     }
 
     /// 事故多発地点への接近時に読み上げる音声アナウンス文言を生成する。
@@ -234,7 +290,8 @@ final class LocationAndAlertManager: NSObject, ObservableObject {
             )
             try audioSession.setActive(true)
         } catch {
-            AppLogger.logError(AppLogger.location, context: "音声アナウンス用AVAudioSession設定エラー", error: error)
+            AppLogger.logError(AppLogger.location, context: "音声アナウンス用AVAudioSession設定エラー（通知のみ送出）", error: error)
+            return
         }
 
         if speechSynthesizer.isSpeaking {
@@ -276,14 +333,24 @@ extension LocationAndAlertManager: CLLocationManagerDelegate {
             if status == .authorizedWhenInUse || status == .authorizedAlways {
                 self.startLocationTrackingImmediately()
             }
+            if status != .notDetermined {
+                AdMobService.shared.startAdFlowAfterActive()
+            }
         }
     }
 
     nonisolated func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let latest = locations.last,
-              CLLocationCoordinate2DIsValid(latest.coordinate) else { return }
+              CLLocationCoordinate2DIsValid(latest.coordinate),
+              latest.horizontalAccuracy >= 0,
+              latest.horizontalAccuracy <= 100.0,
+              abs(latest.timestamp.timeIntervalSinceNow) <= 30.0 else { return }
         let coord = latest.coordinate
+        let speed = latest.speed >= 0 ? latest.speed : 0
+        let course: Double? = latest.course >= 0 ? latest.course : nil
         Task { @MainActor in
+            self.currentSpeedMetersPerSecond = speed
+            self.currentCourseDegrees = course
             self.applyNewUserCoordinate(coord)
         }
     }

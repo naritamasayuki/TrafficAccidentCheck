@@ -43,18 +43,23 @@ struct AdMobConfiguration: Equatable, Sendable {
             self.interstitialUnitID = Self.officialTestInterstitialUnitID
             self.isUsingTestAds = true
         } else {
+            let isBannerTest: Bool
             if Self.isValidBannerUnitID(cleanedUnitID) {
                 self.bannerUnitID = cleanedUnitID
-                self.isUsingTestAds = (cleanedUnitID == Self.officialTestBannerUnitID)
+                isBannerTest = (cleanedUnitID == Self.officialTestBannerUnitID)
             } else {
                 self.bannerUnitID = Self.officialTestBannerUnitID
-                self.isUsingTestAds = true
+                isBannerTest = true
             }
+            let isInterstitialTest: Bool
             if Self.isValidBannerUnitID(cleanedInterstitialID) {
                 self.interstitialUnitID = cleanedInterstitialID
+                isInterstitialTest = (cleanedInterstitialID == Self.officialTestInterstitialUnitID)
             } else {
                 self.interstitialUnitID = Self.officialTestInterstitialUnitID
+                isInterstitialTest = true
             }
+            self.isUsingTestAds = isBannerTest || isInterstitialTest
         }
     }
 

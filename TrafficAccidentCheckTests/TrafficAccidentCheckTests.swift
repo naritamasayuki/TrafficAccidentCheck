@@ -308,14 +308,25 @@ final class TrafficAccidentCheckTests: XCTestCase {
         // 本番IDが設定され、かつ forceTestMode == false (Release) の場合は本番IDが採用されること
         let prodAppID = "ca-app-pub-1234567890123456~1234567890"
         let prodUnitID = "ca-app-pub-1234567890123456/0987654321"
+        let prodInterstitialID = "ca-app-pub-1234567890123456/1122334455"
         let releaseConfig = AdMobConfiguration(
             rawAppID: prodAppID,
             rawBannerUnitID: prodUnitID,
+            rawInterstitialUnitID: prodInterstitialID,
             forceTestMode: false
         )
         XCTAssertEqual(releaseConfig.appID, prodAppID)
         XCTAssertEqual(releaseConfig.bannerUnitID, prodUnitID)
+        XCTAssertEqual(releaseConfig.interstitialUnitID, prodInterstitialID)
         XCTAssertFalse(releaseConfig.isUsingTestAds)
+
+        // インタースティシャルのみ未設定の場合はテスト広告扱いになること
+        let partialConfig = AdMobConfiguration(
+            rawAppID: prodAppID,
+            rawBannerUnitID: prodUnitID,
+            forceTestMode: false
+        )
+        XCTAssertTrue(partialConfig.isUsingTestAds)
 
         // Debug時 (forceTestMode == true) は本番IDが設定されていても自己クリック防止のためテストユニットIDになること
         let debugConfig = AdMobConfiguration(
@@ -625,6 +636,42 @@ final class TrafficAccidentCheckTests: XCTestCase {
         // 4. インタースティシャル広告設定（DEBUG/未設定時は公式テストIDへフォールバック）
         let adConfig = AdMobConfiguration(rawAppID: nil, rawBannerUnitID: nil, rawInterstitialUnitID: nil, forceTestMode: false)
         XCTAssertEqual(adConfig.interstitialUnitID, AdMobConfiguration.officialTestInterstitialUnitID)
+    }
+
+    @MainActor
+    func testSNSExclusionFromScoreAndFreshnessAndSimulateSafety() {
+        let center = CLLocationCoordinate2D(latitude: 35.6812, longitude: 139.7671)
+        let sns = SNSAccidentReport(
+            id: "sns-1",
+            title: "東京都千代田区で衝突事故",
+            body: "東京都千代田区の交差点で事故",
+            latitude: 35.6812,
+            longitude: 139.7671,
+            extractedLocation: "東京都千代田区",
+            postedAt: "2026-11-28T00:00:00Z",
+            sourceName: "SNS",
+            sourceType: "sns_mastodon",
+            sourceURL: "https://mstdn.jp",
+            isUnverified: true,
+            category: "車両相互（未確認）"
+        )
+        let assessment = DangerAnalyzer.evaluate(center: center, accidentsInRadius: [], allSNSReports: [sns])
+        XCTAssertEqual(assessment.score, 0, "未確認のSNS投稿は公式危険度スコアに加算されないべき")
+        XCTAssertEqual(assessment.nearbySNSCount, 1)
+
+        // 鮮度判定（72時間以内のみ許可）
+        let refNow = ISO8601DateFormatter().date(from: "2026-11-28T12:00:00Z")!
+        XCTAssertTrue(SNSAccidentService.isRecentPost("2026-11-28T06:00:00Z", now: refNow))
+        XCTAssertFalse(SNSAccidentService.isRecentPost("2026-11-20T06:00:00Z", now: refNow))
+        XCTAssertFalse(SNSAccidentService.isRecentPost("invalid-date", now: refNow))
+
+        // 進行方向角度差の計算（前方 vs 背後）
+        let bearingNorth = LocationAndAlertManager.bearingDegrees(
+            from: CLLocationCoordinate2D(latitude: 35.0, longitude: 139.0),
+            to: CLLocationCoordinate2D(latitude: 35.01, longitude: 139.0)
+        )
+        XCTAssertLessThan(abs(LocationAndAlertManager.normalizedAngleDifference(0.0, bearingNorth)), 5.0)
+        XCTAssertGreaterThan(abs(LocationAndAlertManager.normalizedAngleDifference(180.0, bearingNorth)), 170.0)
     }
 
     private func makeSampleRecord(id: Int, severityCode: UInt8, deaths: UInt8, injuries: UInt8) -> AccidentRecord {

@@ -16,10 +16,12 @@ struct ContentView: View {
     @State private var visibleRecords: [AccidentRecord] = []
     @State private var totalMatchedInBox: Int = 0
     @State private var hotspots: [AccidentHotspot] = []
+    @State private var monitoredHotspots: [AccidentHotspot] = []
 
     @State private var snsReports: [SNSAccidentReport] = []
     @State private var isRefreshingSNS = false
     @State private var lastSNSUpdatedText: String = L10n.tr("同梱データ読込済")
+    @State private var snsToastMessage: String?
 
     @State private var cameraCenter = LocationAndAlertManager.defaultCoordinate
     @State private var cameraZoom: Float = 17.5
@@ -42,9 +44,18 @@ struct ContentView: View {
     @State private var isShowingSavedLocationsSheet = false
     @State private var isShowingShareReportSheet = false
     @State private var isShowingSaveLocationAlert = false
+    @State private var isShowingLocationSettingsAlert = false
     @State private var newLocationName = ""
 
     private let snsService = SNSAccidentService()
+
+    private var isDiagnosingCurrentLocation: Bool {
+        locationManager.isFollowingUser && locationManager.userCoordinate != nil
+    }
+
+    private var activeDiagnosisCoordinate: CLLocationCoordinate2D {
+        isDiagnosingCurrentLocation ? (locationManager.userCoordinate ?? cameraCenter) : cameraCenter
+    }
 
     var body: some View {
         ZStack(alignment: .top) {
@@ -63,6 +74,20 @@ struct ContentView: View {
 
                 if let errorMsg = dataLoadErrorMessage {
                     errorBanner(message: errorMsg)
+                }
+
+                if locationManager.isLocationDeniedOrRestricted {
+                    locationDeniedBanner
+                }
+
+                if let toast = snsToastMessage {
+                    Text(toast)
+                        .font(.caption.bold())
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color.black.opacity(0.78), in: Capsule())
+                        .transition(.opacity)
                 }
 
                 if let alertSpot = locationManager.activeHotspotAlert {
@@ -132,20 +157,25 @@ struct ContentView: View {
         }
         .sheet(isPresented: $isShowingShareReportSheet) {
             if let assessment = dangerAssessment {
-                let targetCoord = locationManager.isFollowingUser
-                    ? (locationManager.userCoordinate ?? cameraCenter)
-                    : cameraCenter
-                let defaultTitle = L10n.format(
-                    "北緯 %.4f°, 東経 %.4f° 周辺",
-                    targetCoord.latitude,
-                    targetCoord.longitude
-                )
+                let defaultTitle = isDiagnosingCurrentLocation
+                    ? L10n.tr("現在地周辺エリア")
+                    : L10n.tr("地図選択エリア周辺")
                 SafetyReportShareSheet(
                     locationTitle: defaultTitle,
                     assessment: assessment,
                     periodLabel: filter.yearFilter.displayText(latestYear: dataStore.latestYear)
                 )
             }
+        }
+        .alert("位置情報へのアクセスがオフです", isPresented: $isShowingLocationSettingsAlert) {
+            Button("設定を開く") {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url)
+                }
+            }
+            Button("キャンセル", role: .cancel) {}
+        } message: {
+            Text("現在地周辺の危険度診断や接近音声案内を利用するには、設定アプリから位置情報の利用を許可してください。")
         }
         .alert("お気に入り地点を保存", isPresented: $isShowingSaveLocationAlert) {
             TextField("例：自宅周辺、〇〇小学校通学路", text: $newLocationName)
@@ -197,7 +227,12 @@ struct ContentView: View {
                     refreshMapData()
                 },
                 onSelectAccident: { selectedAccident = $0 },
-                onSelectSNSReport: { selectedSNSReport = $0 }
+                onSelectSNSReport: { selectedSNSReport = $0 },
+                onUserInteraction: {
+                    if locationManager.isFollowingUser {
+                        locationManager.isFollowingUser = false
+                    }
+                }
             )
         } else {
             FallbackMapKitView(
@@ -215,7 +250,12 @@ struct ContentView: View {
                     refreshMapData()
                 },
                 onSelectAccident: { selectedAccident = $0 },
-                onSelectSNSReport: { selectedSNSReport = $0 }
+                onSelectSNSReport: { selectedSNSReport = $0 },
+                onUserInteraction: {
+                    if locationManager.isFollowingUser {
+                        locationManager.isFollowingUser = false
+                    }
+                }
             )
         }
     }
@@ -236,8 +276,15 @@ extension ContentView {
                         HStack(spacing: 6) {
                             let radiusInt = Int(assessment.radiusMeters)
                             let radiusText = radiusInt >= 1000 ? "\(radiusInt / 1000)km" : "\(radiusInt)m"
-                            Text("周辺\(radiusText)危険度: \(assessment.level.localizedName)")
+                            Text(isDiagnosingCurrentLocation ? "現在地" : "地図中心")
+                                .font(.caption2.bold())
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(isDiagnosingCurrentLocation ? Color.blue : Color.secondary, in: Capsule())
+                            Text("周辺\(radiusText): \(assessment.level.localizedName)")
                                 .font(.subheadline.bold())
+                                .lineLimit(1)
                             Text("(\(assessment.score)/100)")
                                 .font(.caption.monospacedDigit().bold())
                                 .padding(.horizontal, 6)
@@ -261,14 +308,12 @@ extension ContentView {
                     withAnimation(.spring(duration: 0.25)) {
                         isShowingDangerDetail.toggle()
                     }
-                    if isShowingDangerDetail {
-                        recordEngagementAction()
-                    }
                 } label: {
                     Image(systemName: isShowingDangerDetail ? "chevron.up.circle.fill" : "info.circle.fill")
                         .font(.title3)
                         .foregroundStyle(.secondary)
                 }
+                .accessibilityLabel(L10n.tr(isShowingDangerDetail ? "診断詳細を閉じる" : "診断詳細を開く"))
             }
 
             if isShowingDangerDetail, let assessment = dangerAssessment {
@@ -292,7 +337,7 @@ extension ContentView {
                 HStack {
                     Label("最多類型: \(assessment.dominantAccidentType)", systemImage: "car.2.fill")
                     Spacer()
-                    Label("多発地点監視: \(hotspots.count)箇所", systemImage: "bell.badge.fill")
+                    Label("多発地点監視: \(monitoredHotspots.count)箇所", systemImage: "bell.badge.fill")
                 }
                 .font(.caption2)
                 .foregroundStyle(.secondary)
@@ -334,6 +379,11 @@ extension ContentView {
                     icon: locationManager.isFollowingUser ? "location.fill" : "location",
                     activeColor: locationManager.isFollowingUser ? .blue : nil
                 ) {
+                    if locationManager.isLocationDeniedOrRestricted {
+                        locationManager.isFollowingUser = false
+                        isShowingLocationSettingsAlert = true
+                        return
+                    }
                     locationManager.isFollowingUser.toggle()
                     if locationManager.isFollowingUser {
                         if let coord = locationManager.userCoordinate {
@@ -392,8 +442,9 @@ extension ContentView {
                     filter.severity = (filter.severity == .fatalOnly) ? .all : .fatalOnly
                 }
 
+                let activeSNSCount = snsReports.filter { !filter.hiddenSNSReportIDs.contains($0.id) }.count
                 pillButton(
-                    title: L10n.format("SNS速報(未確認): %d件", snsReports.count),
+                    title: L10n.format("SNS速報(未確認): %d件", activeSNSCount),
                     icon: filter.showSNSReports ? "checkmark.circle.fill" : "circle",
                     activeColor: filter.showSNSReports ? .purple : nil
                 ) { filter.showSNSReports.toggle() }
@@ -404,7 +455,7 @@ extension ContentView {
                     activeColor: nil
                 ) {
                     guard !isRefreshingSNS else { return }
-                    Task { await refreshSNSFeed() }
+                    Task { await refreshSNSFeed(showToast: true) }
                 }
 
                 pillButton(title: "バグ報告", icon: "ladybug.fill", activeColor: nil) {
@@ -451,6 +502,26 @@ extension ContentView {
         .background(Color.red.opacity(0.15), in: RoundedRectangle(cornerRadius: 10))
     }
 
+    private var locationDeniedBanner: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "location.slash.fill")
+                .foregroundStyle(.orange)
+            Text("位置情報がオフのため地図中心を診断中です")
+                .font(.caption2)
+                .foregroundStyle(.primary)
+            Spacer()
+            Button("設定を開く") {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url)
+                }
+            }
+            .font(.caption2.bold())
+            .buttonStyle(.bordered)
+        }
+        .padding(8)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
+    }
+
     private func hotspotProximityBanner(spot: AccidentHotspot) -> some View {
         HStack(alignment: .top, spacing: 10) {
             Image(systemName: "speaker.wave.3.fill")
@@ -471,6 +542,7 @@ extension ContentView {
                 Image(systemName: "xmark.circle.fill")
                     .foregroundStyle(.white.opacity(0.85))
             }
+            .accessibilityLabel(L10n.tr("接近通知を閉じる"))
         }
         .padding(10)
         .background(Color.red.gradient, in: RoundedRectangle(cornerRadius: 12))
@@ -590,47 +662,79 @@ extension ContentView {
         visibleRecords = queryResult.records
         totalMatchedInBox = queryResult.totalMatchedInBox
 
-        let targetCoord = locationManager.userCoordinate ?? cameraCenter
+        // 診断は表示フィルタから独立させ、追従ON時は現在地・OFF時は地図中心を対象にする
+        let targetCoord = activeDiagnosisCoordinate
         let radius = filter.diagnosisRadius.meters
-        let nearbyRecords = dataStore.recordsNear(coordinate: targetCoord, radiusMeters: radius, filter: filter)
+        let neutralFilter = AccidentFilter()
+        let nearbyRecords = dataStore.recordsNear(coordinate: targetCoord, radiusMeters: radius, filter: neutralFilter)
+
+        // 地図上のホットスポット強調表示（表示領域＋診断地点）
         let hotspotSource = nearbyRecords.isEmpty ? queryResult.records : (queryResult.records + nearbyRecords)
-        let detectedHotspots = DangerAnalyzer.detectHotspots(
+        hotspots = DangerAnalyzer.detectHotspots(
             from: hotspotSource,
             minimumCount: 5,
             targetYear: dataStore.latestYear
         )
-        hotspots = detectedHotspots
-        locationManager.updateMonitoredHotspots(detectedHotspots)
 
+        // 接近監視用のホットスポットは表示フィルタ・画面範囲に依存せず現在地周辺1.5kmの全件から算出する
+        let monitorCenter = locationManager.userCoordinate ?? targetCoord
+        let monitorRecords = dataStore.recordsNear(coordinate: monitorCenter, radiusMeters: 1500.0, filter: neutralFilter)
+        let detectedMonitorHotspots = DangerAnalyzer.detectHotspots(
+            from: monitorRecords,
+            minimumCount: 5,
+            maxHotspots: 30,
+            targetYear: dataStore.latestYear
+        )
+        monitoredHotspots = detectedMonitorHotspots
+        locationManager.updateMonitoredHotspots(detectedMonitorHotspots)
+
+        let visibleSNS = snsReports.filter { !filter.hiddenSNSReportIDs.contains($0.id) }
         dangerAssessment = DangerAnalyzer.evaluate(
             center: targetCoord,
             accidentsInRadius: nearbyRecords,
-            allSNSReports: snsReports,
+            allSNSReports: visibleSNS,
             radiusMeters: radius
         )
     }
 
-    private func refreshSNSFeed() async {
+    private func refreshSNSFeed(showToast: Bool = false) async {
         guard !isRefreshingSNS else { return }
         isRefreshingSNS = true
         defer { isRefreshingSNS = false }
 
-        snsReports = await snsService.fetchLatestFreeSNSReports(existingReports: snsReports)
+        let result = await snsService.fetchLatestFreeSNSReports(existingReports: snsReports)
+        snsReports = result.reports
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm"
         lastSNSUpdatedText = L10n.format("%@ 更新", formatter.string(from: Date()))
         refreshMapData()
+
+        if showToast {
+            let msg = result.didFetchAny
+                ? L10n.format("SNS速報を更新しました（新着 %d件）", result.newCount)
+                : L10n.tr("オフラインのため最新データを取得できませんでした")
+            withAnimation { snsToastMessage = msg }
+            Task { @MainActor in
+                try? await Task.sleep(nanoseconds: 3_000_000_000)
+                withAnimation {
+                    if self.snsToastMessage == msg {
+                        self.snsToastMessage = nil
+                    }
+                }
+            }
+        }
     }
 
     private func followUserCoordinate(_ coord: CLLocationCoordinate2D) {
         cameraCenter = coord
-        cameraZoom = 17.5
         cameraMoveTrigger += 1
+        let halfSpanLat = max(0.00125, (currentBoundingBox.maxLatitude - currentBoundingBox.minLatitude) / 2.0)
+        let halfSpanLon = max(0.00125, (currentBoundingBox.maxLongitude - currentBoundingBox.minLongitude) / 2.0)
         currentBoundingBox = CoordinateBoundingBox(
-            minLatitude: coord.latitude - 0.00125,
-            maxLatitude: coord.latitude + 0.00125,
-            minLongitude: coord.longitude - 0.00125,
-            maxLongitude: coord.longitude + 0.00125
+            minLatitude: coord.latitude - halfSpanLat,
+            maxLatitude: coord.latitude + halfSpanLat,
+            minLongitude: coord.longitude - halfSpanLon,
+            maxLongitude: coord.longitude + halfSpanLon
         )
         refreshMapData()
     }
@@ -650,9 +754,7 @@ extension ContentView {
 
     private func saveCurrentLocationSnapshot() {
         guard let assessment = dangerAssessment else { return }
-        let targetCoord = locationManager.isFollowingUser
-            ? (locationManager.userCoordinate ?? cameraCenter)
-            : cameraCenter
+        let targetCoord = activeDiagnosisCoordinate
         let trimmed = newLocationName.trimmingCharacters(in: .whitespacesAndNewlines)
         let displayName = trimmed.isEmpty
             ? L10n.format("保存地点 #%d", savedLocations.count + 1)
@@ -676,8 +778,13 @@ extension ContentView {
     private func recordEngagementAction() {
         if ReviewPromptManager.recordActionAndShouldRequestReview() {
             requestReview()
+            return
         }
-        AdMobService.shared.recordActionAndPresentInterstitialIfReady()
+        let isMovingFast = locationManager.currentSpeedMetersPerSecond >= 3.0
+        AdMobService.shared.recordActionAndPresentInterstitialIfReady(
+            isMovingFast: isMovingFast,
+            isBackgroundMode: locationManager.isBackgroundModeEnabled
+        )
     }
 
     private func colorForDanger(_ level: DangerLevel) -> Color {

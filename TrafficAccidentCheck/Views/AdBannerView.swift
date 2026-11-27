@@ -1,15 +1,18 @@
 import AppTrackingTransparency
+import CoreLocation
 import GoogleMobileAds
 import SwiftUI
 import UIKit
+import UserMessagingPlatform
 
-/// Google Mobile Ads SDK の初期化と ATT（App Tracking Transparency）許可リクエストを管理するサービス。
+/// Google Mobile Ads SDK の初期化と UMP（GDPR同意）・ATT（App Tracking Transparency）許可リクエストを管理するサービス。
 @MainActor
 final class AdMobService: ObservableObject {
     static let shared = AdMobService()
 
     @Published private(set) var isInitialized = false
-    private var hasStartedFlow = false
+    private var isRunningAdFlow = false
+    private var hasCompletedAdFlow = false
     let configuration: AdMobConfiguration
 
     // 控えめなインタースティシャル広告管理（頻度制限・クールダウン付き）
@@ -24,23 +27,60 @@ final class AdMobService: ObservableObject {
         self.configuration = AdMobConfiguration.current()
     }
 
-    /// アプリがアクティブになった後、ATTトラッキング許可の確認完了を待ってから Google Mobile Ads SDK を初期化する。
+    /// 位置情報権限が確定し、かつアプリがアクティブな状態で UMP → ATT → AdMob SDK 初期化を順番に実行する。
     func startAdFlowAfterActive() {
-        guard !hasStartedFlow else {
+        guard !hasCompletedAdFlow else {
             initializeIfNeeded()
             return
         }
-        hasStartedFlow = true
+        guard !isRunningAdFlow else { return }
+
+        // 起動直後に位置情報ダイアログとATT/UMPダイアログが衝突するのを防ぐ
+        let locStatus = CLLocationManager().authorizationStatus
+        guard locStatus != .notDetermined else {
+            return
+        }
+
+        isRunningAdFlow = true
 
         Task { @MainActor in
-            // iOS 17+ でウィンドウが完全に前面化してからATTダイアログを表示するための短い待機
+            defer { self.isRunningAdFlow = false }
+            // iOS 17+ でウィンドウが完全に前面化してから同意・ATTダイアログを表示するための短い待機
             try? await Task.sleep(nanoseconds: 600_000_000)
+            guard UIApplication.shared.applicationState == .active else { return }
+
+            await requestUMPConsentIfNeeded()
+            guard UIApplication.shared.applicationState == .active else { return }
+
             let status = ATTrackingManager.trackingAuthorizationStatus
             if status == .notDetermined {
                 let newStatus = await ATTrackingManager.requestTrackingAuthorization()
                 AppLogger.ad.info("ATTトラッキング許可ステータス更新: \(String(describing: newStatus.rawValue))")
             }
+            self.hasCompletedAdFlow = true
             self.initializeIfNeeded()
+        }
+    }
+
+    /// Google UMP（User Messaging Platform）による同意情報の更新・必要時の同意フォーム表示を行う。
+    private func requestUMPConsentIfNeeded() async {
+        let parameters = RequestParameters()
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            ConsentInformation.shared.requestConsentInfoUpdate(with: parameters) { error in
+                if let error {
+                    AppLogger.logError(AppLogger.ad, context: "UMP同意情報更新エラー（続行）", error: error)
+                }
+                Task { @MainActor in
+                    if let rootVC = Self.findKeyRootViewController() {
+                        do {
+                            try await ConsentForm.loadAndPresentIfRequired(from: rootVC)
+                        } catch {
+                            AppLogger.logError(AppLogger.ad, context: "UMP同意フォーム表示エラー（続行）", error: error)
+                        }
+                    }
+                    continuation.resume()
+                }
+            }
         }
     }
 
@@ -85,7 +125,9 @@ final class AdMobService: ObservableObject {
     }
 
     /// 診断や地点移動などの区切りアクションを記録し、頻度条件を満たした場合のみ控えめにインタースティシャル広告を表示する。
-    func recordActionAndPresentInterstitialIfReady() {
+    /// 走行中（高速移動中）およびバックグラウンドモード中は安全のため表示を抑止する。
+    func recordActionAndPresentInterstitialIfReady(isMovingFast: Bool = false, isBackgroundMode: Bool = false) {
+        guard !isMovingFast, !isBackgroundMode else { return }
         diagnosisActionCount += 1
         guard diagnosisActionCount % interstitialIntervalCount == 0 else { return }
 

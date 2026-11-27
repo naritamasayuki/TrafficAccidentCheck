@@ -10,7 +10,7 @@ final class SNSAccidentService: Sendable {
         self.session = session
     }
 
-    /// バンドルに同梱された初期データ (`sns_reports.json`) を読み込む。
+    /// バンドルに同梱された初期データ (`sns_reports.json`) を読み込む（72時間以内の投稿かつ不適切ワード除外）。
     func loadBundledReports(bundle: Bundle = .main) -> [SNSAccidentReport] {
         guard let url = bundle.url(forResource: "sns_reports", withExtension: "json") else {
             AppLogger.network.warning("sns_reports.json がバンドル内に見つかりません。")
@@ -19,8 +19,11 @@ final class SNSAccidentService: Sendable {
         do {
             let data = try Data(contentsOf: url)
             let payload = try JSONDecoder().decode(SNSFeedPayload.self, from: data)
-            AppLogger.network.info("同梱SNS速報データを読み込みました: \(payload.reports.count) 件")
-            return payload.reports
+            let filtered = payload.reports.filter {
+                Self.isTrafficAccidentRelated($0.title + " " + $0.body) && Self.isRecentPost($0.postedAt)
+            }
+            AppLogger.network.info("同梱SNS速報データを読み込みました: \(filtered.count) 件 (元: \(payload.reports.count) 件)")
+            return filtered
         } catch {
             AppLogger.logError(AppLogger.network, context: "同梱SNS JSONのデコード失敗", error: error)
             return []
@@ -29,13 +32,14 @@ final class SNSAccidentService: Sendable {
 
     /// 無料の公開データソース（Mastodon公開タグ + GoogleニュースRSS + 国土地理院API）から最新のSNS・速報を取得する。
     /// ネットワーク切断やAPIエラーが発生した場合はログを記録し、既存の同梱データとマージして返す。
-    func fetchLatestFreeSNSReports(existingReports: [SNSAccidentReport]) async -> [SNSAccidentReport] {
+    func fetchLatestFreeSNSReports(existingReports: [SNSAccidentReport]) async -> (reports: [SNSAccidentReport], newCount: Int, didFetchAny: Bool) {
         var candidates: [RawSNSPost] = []
 
         async let mastodonTask = fetchMastodonTagPosts()
         async let newsTask = fetchGoogleNewsRSSPosts()
 
         let (mastodonPosts, newsPosts) = await (mastodonTask, newsTask)
+        let didFetchAny = !mastodonPosts.isEmpty || !newsPosts.isEmpty
         candidates.append(contentsOf: mastodonPosts)
         candidates.append(contentsOf: newsPosts)
 
@@ -43,6 +47,7 @@ final class SNSAccidentService: Sendable {
         var geocodeCache: [String: CLLocationCoordinate2D] = [:]
 
         for post in candidates {
+            guard Self.isRecentPost(post.postedAt) else { continue }
             guard Self.isTrafficAccidentRelated(post.text) else { continue }
             guard let place = Self.extractJapaneseLocation(from: post.text) else { continue }
 
@@ -79,19 +84,23 @@ final class SNSAccidentService: Sendable {
             }
         }
 
-        // 既存データと重複排除して結合
+        // 既存データと重複排除して結合（72時間超過の古い投稿は除外）
         var combined = newReports
-        for item in existingReports where !combined.contains(where: { $0.id == item.id || $0.title == item.title }) {
+        for item in existingReports where Self.isRecentPost(item.postedAt) &&
+            !combined.contains(where: { $0.id == item.id || $0.title == item.title }) {
             combined.append(item)
         }
         AppLogger.network.info("SNS速報の更新完了: 新規 \(newReports.count) 件 / 合計 \(combined.count) 件")
-        return combined
+        return (combined, newReports.count, didFetchAny)
     }
 
-    // MARK: - Text Analysis (Unit Testable)
+    // MARK: - Text & Date Analysis (Unit Testable)
 
-    private static let accidentKeywords = ["事故", "衝突", "追突", "玉突き", "横転", "はねられ", "通行止", "接触"]
-    private static let excludeKeywords = ["放送事故", "原発事故", "医療事故", "事故物件", "ガチャ", "ゲーム"]
+    private static let accidentKeywords = ["事故", "衝突", "追突", "玉突き", "横転", "はねられ", "通行止", "接触", "ひき逃げ"]
+    private static let excludeKeywords = [
+        "放送事故", "原発事故", "医療事故", "事故物件", "ガチャ", "ゲーム",
+        "町長選", "選挙", "同棲", "アホ", "ドラマ", "アニメ", "小説", "ライブ"
+    ]
     private static let invalidLocationWords = [
         "事故", "交通", "警察", "病院", "現場", "車線", "道路", "高速", "交差点",
         "運転", "男性", "女性", "死亡", "重傷", "軽傷", "意識", "搬送", "逮捕",
@@ -101,10 +110,49 @@ final class SNSAccidentService: Sendable {
     /// 投稿テキストが実際の道路交通事故に関する内容かどうかを判定する。
     static func isTrafficAccidentRelated(_ text: String) -> Bool {
         guard !text.isEmpty else { return false }
+        let stripped = text
+            .replacingOccurrences(of: "https?://\\S+", with: "", options: .regularExpression)
+            .replacingOccurrences(of: "#\\S+", with: "", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard stripped.count >= 10 else { return false }
         if excludeKeywords.contains(where: { text.contains($0) }) {
             return false
         }
         return accidentKeywords.contains(where: { text.contains($0) })
+    }
+
+    /// 投稿日時文字列（ISO8601 / RFC822）をパースする。
+    static func parsePostDate(_ raw: String) -> Date? {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        let iso1 = ISO8601DateFormatter()
+        iso1.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let d = iso1.date(from: trimmed) { return d }
+        let iso2 = ISO8601DateFormatter()
+        iso2.formatOptions = [.withInternetDateTime]
+        if let d = iso2.date(from: trimmed) { return d }
+
+        let rfc = DateFormatter()
+        rfc.locale = Locale(identifier: "en_US_POSIX")
+        rfc.dateFormat = "EEE, dd MMM yyyy HH:mm:ss zzz"
+        if let d = rfc.date(from: trimmed) { return d }
+        rfc.dateFormat = "EEE, dd MMM yyyy HH:mm:ss Z"
+        return rfc.date(from: trimmed)
+    }
+
+    /// 投稿が指定時間以内（デフォルト72時間以内）の新しいものかどうかを判定する。
+    static func isRecentPost(_ postedAt: String, maxAgeHours: Double = 72, now: Date = Date()) -> Bool {
+        guard let date = parsePostDate(postedAt) else { return false }
+        let age = now.timeIntervalSince(date)
+        return age >= -300 && age <= maxAgeHours * 3600
+    }
+
+    /// 投稿日時の相対表示（例：「3時間前」）を返す。
+    static func relativeTimeText(for postedAt: String, now: Date = Date()) -> String {
+        guard let date = parsePostDate(postedAt) else { return postedAt }
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .short
+        return formatter.localizedString(for: date, relativeTo: now)
     }
 
     /// 投稿テキストから日本の地名（都道府県＋市区町村など）を抽出する。

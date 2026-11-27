@@ -3,7 +3,7 @@ import Foundation
 
 /// 周辺エリアの危険度ランク定義。
 enum DangerLevel: String, Sendable {
-    case safe = "低（安全）"
+    case safe = "低（記録少）"
     case caution = "中（注意）"
     case warning = "高（警戒）"
     case critical = "極めて高い（厳重警戒）"
@@ -138,8 +138,10 @@ enum DangerAnalyzer {
             return loc.distance(from: centerLocation) <= radiusMeters * 2.0
         }.count
 
-        // スコア計算: 負傷事故1件=2点、死亡事故1件=25点、SNS直近速報1件=8点（上限100点）
-        let rawScore = total * 2 + fatalCount * 25 + nearbySNS * 8
+        // スコア計算: 公式データのみで算出（100m基準: 負傷1件=2点, 死亡1件=25点）。半径が100mより大きい場合は面積比の平方根で緩やかに正規化する
+        let baseScore = Double(total * 2 + fatalCount * 25)
+        let radiusFactor = radiusMeters > 100.0 ? sqrt(100.0 / radiusMeters) : 1.0
+        let rawScore = Int((baseScore * radiusFactor).rounded())
         let score = min(100, max(0, rawScore))
 
         let level: DangerLevel

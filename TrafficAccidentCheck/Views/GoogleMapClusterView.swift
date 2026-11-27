@@ -29,6 +29,7 @@ struct GoogleMapContainerView: UIViewRepresentable {
     let onRegionChanged: (CoordinateBoundingBox, CLLocationCoordinate2D, Float) -> Void
     let onSelectAccident: (AccidentRecord) -> Void
     let onSelectSNSReport: (SNSAccidentReport) -> Void
+    var onUserInteraction: (() -> Void)? = nil
 
     func makeCoordinator() -> Coordinator {
         Coordinator(parent: self)
@@ -282,6 +283,12 @@ struct GoogleMapContainerView: UIViewRepresentable {
 
         // MARK: - GMUClusterManagerDelegate
 
+        func mapView(_ mapView: GMSMapView, willMove gesture: Bool) {
+            if gesture {
+                parent.onUserInteraction?()
+            }
+        }
+
         func clusterManager(_ clusterManager: GMUClusterManager, didTap cluster: GMUCluster) -> Bool {
             return false // デフォルトのズームイン動作に委譲
         }
@@ -349,6 +356,7 @@ struct FallbackMapKitView: View {
     let onRegionChanged: (CoordinateBoundingBox, CLLocationCoordinate2D, Float) -> Void
     let onSelectAccident: (AccidentRecord) -> Void
     let onSelectSNSReport: (SNSAccidentReport) -> Void
+    var onUserInteraction: (() -> Void)? = nil
 
     @State private var position: MapCameraPosition = .region(
         MKCoordinateRegion(
@@ -356,25 +364,12 @@ struct FallbackMapKitView: View {
             span: MKCoordinateSpan(latitudeDelta: 0.0025, longitudeDelta: 0.0025)
         )
     )
+    @State private var currentSpan = MKCoordinateSpan(latitudeDelta: 0.0025, longitudeDelta: 0.0025)
+    @State private var isProgrammaticMove = false
 
     var body: some View {
         Map(position: $position) {
             UserAnnotation()
-
-            if let userCoord = userCoordinate {
-                Annotation("現在地", coordinate: userCoord) {
-                    ZStack {
-                        Circle()
-                            .fill(Color.blue.opacity(0.25))
-                            .frame(width: 32, height: 32)
-                        Circle()
-                            .fill(Color.blue)
-                            .frame(width: 14, height: 14)
-                            .overlay(Circle().stroke(Color.white, lineWidth: 2.5))
-                            .shadow(radius: 2)
-                    }
-                }
-            }
 
             // ホットスポット（事故多発エリア）を二重リング＋警告バッジで強調表示
             ForEach(hotspots.prefix(10)) { spot in
@@ -468,17 +463,24 @@ struct FallbackMapKitView: View {
             MapScaleView()
         }
         .onChange(of: cameraMoveTrigger) { _, _ in
+            isProgrammaticMove = true
             withAnimation {
                 position = .region(
                     MKCoordinateRegion(
                         center: cameraCenter,
-                        span: MKCoordinateSpan(latitudeDelta: 0.0025, longitudeDelta: 0.0025)
+                        span: currentSpan
                     )
                 )
             }
         }
         .onMapCameraChange(frequency: .onEnd) { context in
             let region = context.region
+            currentSpan = region.span
+            if isProgrammaticMove {
+                isProgrammaticMove = false
+            } else {
+                onUserInteraction?()
+            }
             let box = CoordinateBoundingBox(
                 minLatitude: region.center.latitude - region.span.latitudeDelta / 2.0,
                 maxLatitude: region.center.latitude + region.span.latitudeDelta / 2.0,

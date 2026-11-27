@@ -69,13 +69,19 @@ INVALID_LOCATION_WORDS = (
 )
 
 # 事故関連キーワードフィルタ（無関係な日常投稿を除外するため）
-ACCIDENT_KEYWORDS = ("事故", "衝突", "追突", "玉突き", "横転", "はねられ", "通行止", "右折車", "直進車")
-EXCLUDE_KEYWORDS = ("放送事故", "原発事故", "医療事故", "事故物件", "ネタバレ", "ガチャ", "ゲーム")
+ACCIDENT_KEYWORDS = ("交通事故", "衝突事故", "追突事故", "玉突き", "横転事故", "はねられ", "ひき逃げ", "車両火災", "通行止", "人身事故")
+EXCLUDE_KEYWORDS = (
+    "放送事故", "原発事故", "医療事故", "事故物件", "ネタバレ", "ガチャ", "ゲーム",
+    "町長選", "選挙", "同棲", "アホ", "ドラマ", "アニメ", "小説", "ライブ", "配信",
+)
 
 
 def is_traffic_accident_text(text: str) -> bool:
     """テキストが実際の道路交通事故に関する内容かどうかを判定する。"""
     if not text:
+        return False
+    cleaned = re.sub(r"https?://\S+|#\S+", "", text).strip()
+    if len(cleaned) < 12:
         return False
     if any(ex in text for ex in EXCLUDE_KEYWORDS):
         return False
@@ -356,12 +362,6 @@ def build_sns_reports(max_items: int = 25) -> List[Dict]:
         )
         if len(reports) >= max_items:
             break
-
-    # 取得件数が少ない場合はサンプルデータを補完して常に地図上で確認可能にする
-    existing_ids = {r["id"] for r in reports}
-    for seed in get_fallback_seed_reports():
-        if seed["id"] not in existing_ids:
-            reports.append(seed)
 
     return reports
 
