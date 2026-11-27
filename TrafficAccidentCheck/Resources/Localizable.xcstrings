@@ -10991,6 +10991,122 @@
           }
         }
       }
+    },
+    "住所・駅・地名で検索": {
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "住所・駅・地名で検索"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search by Address, Station, or Place"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "按地址、车站或地名搜索"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "依地址、車站或地名搜尋"
+          }
+        }
+      }
+    },
+    "駅名・住所・施設名を入力": {
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "駅名・住所・施設名を入力"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter station, address, or place"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "输入车站名、地址或设施名称"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "輸入車站名、地址或設施名稱"
+          }
+        }
+      }
+    },
+    "出典: 警察庁 交通事故統計オープンデータ（加工して作成）": {
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "出典: 警察庁 交通事故統計オープンデータ（加工して作成）"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Source: National Police Agency Traffic Accident Open Data (Processed)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "来源：日本警察厅交通事故统计开放数据（加工整理）"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "來源：日本警察廳交通事故統計開放資料（加工整理）"
+          }
+        }
+      }
+    },
+    "※本アプリは警察庁が公開しているオープンデータを加工して作成した独自の民間アプリであり、警察庁・政府機関・自治体等を代表するものではなく提携関係もありません。": {
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "※本アプリは警察庁が公開しているオープンデータを加工して作成した独自の民間アプリであり、警察庁・政府機関・自治体等を代表するものではなく提携関係もありません。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "* This is an independent private app created by processing public open data from the National Police Agency and is not affiliated with any government agency."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "※本应用是基于日本警察厅公开开放数据加工制作的民间应用，不代表或关联任何政府机构。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "※本應用程式是基於日本警察廳公開開放資料加工製作的民間應用程式，不代表或關聯任何政府機構。"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

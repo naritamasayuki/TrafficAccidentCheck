@@ -102,6 +102,20 @@ final class LocationAndAlertManager: NSObject, ObservableObject {
         authorizationStatus = locationManager.authorizationStatus
         speechSynthesizer.delegate = self
         applyBackgroundLocationSetting()
+        NotificationCenter.default.addObserver(
+            forName: AVAudioSession.interruptionNotification,
+            object: AVAudioSession.sharedInstance(),
+            queue: .main
+        ) { [weak self] notification in
+            guard let info = notification.userInfo,
+                  let typeVal = info[AVAudioSessionInterruptionTypeKey] as? UInt,
+                  let type = AVAudioSession.InterruptionType(rawValue: typeVal) else { return }
+            Task { @MainActor [weak self] in
+                if type == .began {
+                    self?.speechSynthesizer.stopSpeaking(at: .immediate)
+                }
+            }
+        }
     }
 
     /// 実行バンドルの Info.plist にバックグラウンド位置情報モード（`location`）が定義されているか確認する。

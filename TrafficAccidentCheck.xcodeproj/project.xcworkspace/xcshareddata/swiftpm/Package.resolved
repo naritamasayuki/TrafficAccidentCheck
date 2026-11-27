@@ -1,24 +1,6 @@
 {
-  "originHash" : "719c2e7db1da1d076e4c5baf2e72515e23cc5540a897f90b53219191d15ddb51",
+  "originHash" : "3b9752ff554d5fdc91a7c01c2322a5d851b0979c36f02eb55188d9ab9e3d7e77",
   "pins" : [
-    {
-      "identity" : "google-maps-ios-utils",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/googlemaps/google-maps-ios-utils",
-      "state" : {
-        "revision" : "f14e5d608267d35ca5c5f3422f3c7c29d564f7b8",
-        "version" : "7.1.2"
-      }
-    },
-    {
-      "identity" : "ios-maps-sdk",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/googlemaps/ios-maps-sdk",
-      "state" : {
-        "revision" : "a951b24ac0ca7720f87d4be3d5bd539552d13882",
-        "version" : "10.15.0"
-      }
-    },
     {
       "identity" : "swift-package-manager-google-mobile-ads",
       "kind" : "remoteSourceControl",

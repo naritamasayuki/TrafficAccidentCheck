@@ -1,4 +1,5 @@
 import CoreLocation
+import MapKit
 import SwiftUI
 
 /// 公式交通事故レコード（警察庁オープンデータ）の詳細表示シート。
@@ -128,7 +129,7 @@ struct AccidentDetailSheet: View {
                                 .font(.footnote.bold())
                         }
                     }
-                    Text("※本アプリは警察庁が公開しているオープンデータを利用した独自の民間アプリであり、警察庁・政府機関・自治体等を代表するものではなく提携関係もありません。")
+                    Text("※本アプリは警察庁が公開しているオープンデータを加工して作成した独自の民間アプリであり、警察庁・政府機関・自治体等を代表するものではなく提携関係もありません。")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
@@ -262,6 +263,7 @@ struct FilterSheet: View {
 
     @State private var isShowingFirstResetAlert = false
     @State private var isShowingSecondResetAlert = false
+    @StateObject private var placeSearcher = PlaceSearchCompleter()
 
     private let majorCities: [(name: String, coord: CLLocationCoordinate2D)] = [
         ("東京（新宿・都心）", CLLocationCoordinate2D(latitude: 35.6895, longitude: 139.6917)),
@@ -374,6 +376,34 @@ struct FilterSheet: View {
                     }
                 }
 
+                Section("住所・駅・地名で検索") {
+                    TextField("駅名・住所・施設名を入力", text: $placeSearcher.query)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+
+                    ForEach(placeSearcher.results.prefix(5), id: \.self) { completion in
+                        Button {
+                            Task {
+                                if let coord = await placeSearcher.resolveCoordinate(for: completion) {
+                                    onJumpToCoordinate(coord, completion.title)
+                                    dismiss()
+                                }
+                            }
+                        } label: {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(completion.title)
+                                    .font(.subheadline)
+                                    .foregroundStyle(.primary)
+                                if !completion.subtitle.isEmpty {
+                                    Text(completion.subtitle)
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                        }
+                    }
+                }
+
                 Section("主要都市へジャンプ") {
                     ForEach(majorCities, id: \.name) { city in
                         Button {
@@ -434,7 +464,7 @@ struct FilterSheet: View {
                         .font(.caption)
                         .foregroundStyle(.primary)
 
-                    Text("【公的機関との非提携に関する明記】\n本アプリは警察庁および国土地理院が公開しているオープンデータを利用した独自の民間アプリケーションであり、警察庁・政府機関・自治体等を代表するものではなく、提携・承認関係もありません。")
+                    Text("【公的機関との非提携に関する明記】\n本アプリは警察庁および国土地理院が公開しているオープンデータを加工して作成した独自の民間アプリケーションであり、警察庁・政府機関・自治体等を代表するものではなく、提携・承認関係もありません。")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
 
@@ -652,7 +682,7 @@ struct SafetyReportShareSheet: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(.white.opacity(0.14), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
 
-            Text("出典: 警察庁 交通事故統計オープンデータ")
+            Text("出典: 警察庁 交通事故統計オープンデータ（加工して作成）")
                 .font(.caption2)
                 .foregroundStyle(.white.opacity(0.75))
         }
@@ -804,6 +834,56 @@ struct SavedLocationsSheet: View {
         case .caution: return .orange
         case .warning: return .red
         case .critical: return .purple
+        }
+    }
+}
+
+/// MKLocalSearchCompleter を用いて住所・駅名・施設名の候補検索と座標解決を行うヘルパー（無料）。
+@MainActor
+private final class PlaceSearchCompleter: NSObject, ObservableObject, MKLocalSearchCompleterDelegate {
+    @Published var query: String = "" {
+        didSet {
+            let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+            if trimmed.isEmpty {
+                results = []
+            } else {
+                completer.queryFragment = trimmed
+            }
+        }
+    }
+    @Published private(set) var results: [MKLocalSearchCompletion] = []
+
+    private let completer = MKLocalSearchCompleter()
+
+    override init() {
+        super.init()
+        completer.delegate = self
+        completer.resultTypes = [.address, .pointOfInterest]
+        completer.region = MKCoordinateRegion(
+            center: CLLocationCoordinate2D(latitude: 36.2048, longitude: 138.2529),
+            span: MKCoordinateSpan(latitudeDelta: 15.0, longitudeDelta: 15.0)
+        )
+    }
+
+    nonisolated func completerDidUpdateResults(_ completer: MKLocalSearchCompleter) {
+        let items = completer.results
+        Task { @MainActor in
+            self.results = items
+        }
+    }
+
+    nonisolated func completer(_ completer: MKLocalSearchCompleter, didFailWithError error: Error) {
+        AppLogger.logError(AppLogger.map, context: "地名検索補完エラー", error: error)
+    }
+
+    func resolveCoordinate(for completion: MKLocalSearchCompletion) async -> CLLocationCoordinate2D? {
+        let request = MKLocalSearch.Request(completion: completion)
+        do {
+            let response = try await MKLocalSearch(request: request).start()
+            return response.mapItems.first?.placemark.coordinate
+        } catch {
+            AppLogger.logError(AppLogger.map, context: "地名座標解決エラー", error: error)
+            return nil
         }
     }
 }

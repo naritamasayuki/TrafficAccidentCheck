@@ -46,6 +46,7 @@ struct ContentView: View {
     @State private var isShowingSaveLocationAlert = false
     @State private var isShowingLocationSettingsAlert = false
     @State private var newLocationName = ""
+    @State private var refreshGeneration: Int = 0
 
     private let snsService = SNSAccidentService()
 
@@ -211,53 +212,28 @@ struct ContentView: View {
         let activeSNS = filter.showSNSReports
             ? snsReports.filter { !filter.hiddenSNSReportIDs.contains($0.id) }
             : []
-        if isGoogleMapsConfigured {
-            GoogleMapContainerView(
-                records: visibleRecords,
-                snsReports: activeSNS,
-                hotspots: hotspots,
-                displayMode: filter.displayMode,
-                cameraCenter: $cameraCenter,
-                cameraZoom: $cameraZoom,
-                cameraMoveTrigger: cameraMoveTrigger,
-                onRegionChanged: { box, center, zoom in
-                    currentBoundingBox = box
-                    cameraCenter = center
-                    cameraZoom = zoom
-                    refreshMapData()
-                },
-                onSelectAccident: { selectedAccident = $0 },
-                onSelectSNSReport: { selectedSNSReport = $0 },
-                onUserInteraction: {
-                    if locationManager.isFollowingUser {
-                        locationManager.isFollowingUser = false
-                    }
+        return FallbackMapKitView(
+            records: visibleRecords,
+            snsReports: activeSNS,
+            hotspots: hotspots,
+            displayMode: filter.displayMode,
+            userCoordinate: locationManager.userCoordinate,
+            cameraCenter: $cameraCenter,
+            cameraMoveTrigger: cameraMoveTrigger,
+            onRegionChanged: { box, center, zoom in
+                currentBoundingBox = box
+                cameraCenter = center
+                cameraZoom = zoom
+                refreshMapData()
+            },
+            onSelectAccident: { selectedAccident = $0 },
+            onSelectSNSReport: { selectedSNSReport = $0 },
+            onUserInteraction: {
+                if locationManager.isFollowingUser {
+                    locationManager.isFollowingUser = false
                 }
-            )
-        } else {
-            FallbackMapKitView(
-                records: visibleRecords,
-                snsReports: activeSNS,
-                hotspots: hotspots,
-                displayMode: filter.displayMode,
-                userCoordinate: locationManager.userCoordinate,
-                cameraCenter: $cameraCenter,
-                cameraMoveTrigger: cameraMoveTrigger,
-                onRegionChanged: { box, center, zoom in
-                    currentBoundingBox = box
-                    cameraCenter = center
-                    cameraZoom = zoom
-                    refreshMapData()
-                },
-                onSelectAccident: { selectedAccident = $0 },
-                onSelectSNSReport: { selectedSNSReport = $0 },
-                onUserInteraction: {
-                    if locationManager.isFollowingUser {
-                        locationManager.isFollowingUser = false
-                    }
-                }
-            )
-        }
+            }
+        )
     }
 }
 
@@ -639,7 +615,9 @@ extension ContentView {
         locationManager.requestPermissionsAndStart()
 
         do {
-            let store = try AccidentDataStore()
+            let store = try await Task.detached(priority: .userInitiated) {
+                try AccidentDataStore()
+            }.value
             self.dataStore = store
         } catch {
             self.dataLoadErrorMessage = error.localizedDescription
@@ -658,43 +636,51 @@ extension ContentView {
     }
 
     private func refreshMapData() {
-        let queryResult = dataStore.queryRecords(in: currentBoundingBox, filter: filter)
-        visibleRecords = queryResult.records
-        totalMatchedInBox = queryResult.totalMatchedInBox
-
-        // 診断は表示フィルタから独立させ、追従ON時は現在地・OFF時は地図中心を対象にする
+        refreshGeneration += 1
+        let generation = refreshGeneration
+        let store = dataStore
+        let box = currentBoundingBox
+        let currentFilter = filter
         let targetCoord = activeDiagnosisCoordinate
-        let radius = filter.diagnosisRadius.meters
-        let neutralFilter = AccidentFilter()
-        let nearbyRecords = dataStore.recordsNear(coordinate: targetCoord, radiusMeters: radius, filter: neutralFilter)
-
-        // 地図上のホットスポット強調表示（表示領域＋診断地点）
-        let hotspotSource = nearbyRecords.isEmpty ? queryResult.records : (queryResult.records + nearbyRecords)
-        hotspots = DangerAnalyzer.detectHotspots(
-            from: hotspotSource,
-            minimumCount: 5,
-            targetYear: dataStore.latestYear
-        )
-
-        // 接近監視用のホットスポットは表示フィルタ・画面範囲に依存せず現在地周辺1.5kmの全件から算出する
+        let radius = currentFilter.diagnosisRadius.meters
         let monitorCenter = locationManager.userCoordinate ?? targetCoord
-        let monitorRecords = dataStore.recordsNear(coordinate: monitorCenter, radiusMeters: 1500.0, filter: neutralFilter)
-        let detectedMonitorHotspots = DangerAnalyzer.detectHotspots(
-            from: monitorRecords,
-            minimumCount: 5,
-            maxHotspots: 30,
-            targetYear: dataStore.latestYear
-        )
-        monitoredHotspots = detectedMonitorHotspots
-        locationManager.updateMonitoredHotspots(detectedMonitorHotspots)
+        let latestYear = store.latestYear
+        let visibleSNS = snsReports.filter { !currentFilter.hiddenSNSReportIDs.contains($0.id) }
 
-        let visibleSNS = snsReports.filter { !filter.hiddenSNSReportIDs.contains($0.id) }
-        dangerAssessment = DangerAnalyzer.evaluate(
-            center: targetCoord,
-            accidentsInRadius: nearbyRecords,
-            allSNSReports: visibleSNS,
-            radiusMeters: radius
-        )
+        Task.detached(priority: .userInitiated) {
+            let queryResult = store.queryRecords(in: box, filter: currentFilter)
+            let neutralFilter = AccidentFilter()
+            let nearbyRecords = store.recordsNear(coordinate: targetCoord, radiusMeters: radius, filter: neutralFilter)
+            let hotspotSource = nearbyRecords.isEmpty ? queryResult.records : (queryResult.records + nearbyRecords)
+            let detectedHotspots = DangerAnalyzer.detectHotspots(
+                from: hotspotSource,
+                minimumCount: 5,
+                targetYear: latestYear
+            )
+            let monitorRecords = store.recordsNear(coordinate: monitorCenter, radiusMeters: 1500.0, filter: neutralFilter)
+            let detectedMonitorHotspots = DangerAnalyzer.detectHotspots(
+                from: monitorRecords,
+                minimumCount: 5,
+                maxHotspots: 30,
+                targetYear: latestYear
+            )
+            let assessment = DangerAnalyzer.evaluate(
+                center: targetCoord,
+                accidentsInRadius: nearbyRecords,
+                allSNSReports: visibleSNS,
+                radiusMeters: radius
+            )
+
+            await MainActor.run {
+                guard generation == self.refreshGeneration else { return }
+                self.visibleRecords = queryResult.records
+                self.totalMatchedInBox = queryResult.totalMatchedInBox
+                self.hotspots = detectedHotspots
+                self.monitoredHotspots = detectedMonitorHotspots
+                self.locationManager.updateMonitoredHotspots(detectedMonitorHotspots)
+                self.dangerAssessment = assessment
+            }
+        }
     }
 
     private func refreshSNSFeed(showToast: Bool = false) async {
