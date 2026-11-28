@@ -12,6 +12,7 @@ final class AdMobService: ObservableObject {
 
     @Published private(set) var isInitialized = false
     private var isRunningAdFlow = false
+    private var isStartingSDK = false
     private var hasCompletedAdFlow = false
     let configuration: AdMobConfiguration
 
@@ -47,13 +48,18 @@ final class AdMobService: ObservableObject {
             defer { self.isRunningAdFlow = false }
             // iOS 17+ でウィンドウが完全に前面化してから同意・ATTダイアログを表示するための短い待機
             try? await Task.sleep(nanoseconds: 600_000_000)
-            guard UIApplication.shared.applicationState == .active else { return }
+            guard UIApplication.shared.applicationState != .background else { return }
 
             await requestUMPConsentIfNeeded()
-            guard UIApplication.shared.applicationState == .active else { return }
+            guard UIApplication.shared.applicationState != .background else { return }
+
+            // ダイアログ閉鎖直後は一時的に .inactive の場合があるため、短時間だけ .active 復帰を待つ
+            if UIApplication.shared.applicationState != .active {
+                try? await Task.sleep(nanoseconds: 300_000_000)
+            }
 
             let status = ATTrackingManager.trackingAuthorizationStatus
-            if status == .notDetermined {
+            if status == .notDetermined, UIApplication.shared.applicationState == .active {
                 let newStatus = await ATTrackingManager.requestTrackingAuthorization()
                 AppLogger.ad.info("ATTトラッキング許可ステータス更新: \(String(describing: newStatus.rawValue))")
             }
@@ -86,7 +92,7 @@ final class AdMobService: ObservableObject {
 
     /// Info.plist の `GADApplicationIdentifier` を検証した上で Google Mobile Ads SDK を安全に初期化する。
     func initializeIfNeeded() {
-        guard !isInitialized else { return }
+        guard !isInitialized, !isStartingSDK else { return }
 
         let plistAppID = (Bundle.main.object(forInfoDictionaryKey: "GADApplicationIdentifier") as? String)?
             .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
@@ -96,14 +102,16 @@ final class AdMobService: ObservableObject {
             return
         }
 
+        isStartingSDK = true
         MobileAds.shared.start { status in
             let adapterCount = status.adapterStatusesByClassName.count
             AppLogger.ad.info("Google Mobile Ads SDK 初期化完了 (アダプタ数: \(adapterCount), テスト広告モード: \(self.configuration.isUsingTestAds))")
             Task { @MainActor in
+                self.isStartingSDK = false
+                self.isInitialized = true
                 self.loadInterstitialIfNeeded()
             }
         }
-        isInitialized = true
     }
 
     /// インタースティシャル広告をバックグラウンドで事前読み込みする（失敗時もアプリ動作を妨げない）。
@@ -179,7 +187,7 @@ struct GADBannerRepresentableView: UIViewRepresentable {
     }
 
     func makeUIView(context: Context) -> BannerView {
-        let adSize = currentOrientationAnchoredAdaptiveBanner(width: max(320, width))
+        let adSize = largeAnchoredAdaptiveBanner(width: max(320, width))
         let bannerView = BannerView(adSize: adSize)
         bannerView.adUnitID = adUnitID
         bannerView.delegate = context.coordinator
@@ -192,6 +200,12 @@ struct GADBannerRepresentableView: UIViewRepresentable {
         context.coordinator.parent = self
         if bannerView.rootViewController == nil {
             bannerView.rootViewController = Self.findRootViewController()
+        }
+        let targetWidth = max(320, width)
+        if abs(bannerView.adSize.size.width - targetWidth) > 8 {
+            let newSize = largeAnchoredAdaptiveBanner(width: targetWidth)
+            bannerView.adSize = newSize
+            bannerView.load(Request())
         }
     }
 
@@ -207,13 +221,23 @@ struct GADBannerRepresentableView: UIViewRepresentable {
 
     final class Coordinator: NSObject, BannerViewDelegate {
         var parent: GADBannerRepresentableView
+        private var retryCount = 0
+        private let maxRetryCount = 3
+        private var retryTask: Task<Void, Never>?
 
         init(parent: GADBannerRepresentableView) {
             self.parent = parent
         }
 
+        deinit {
+            retryTask?.cancel()
+        }
+
         func bannerViewDidReceiveAd(_ bannerView: BannerView) {
             AppLogger.ad.info("AdMob バナー広告の読み込みに成功しました (UnitID: \(bannerView.adUnitID ?? "-"))")
+            retryTask?.cancel()
+            retryTask = nil
+            retryCount = 0
             Task { @MainActor in
                 parent.isAdLoaded = true
                 parent.loadErrorDescription = nil
@@ -226,6 +250,16 @@ struct GADBannerRepresentableView: UIViewRepresentable {
                 parent.isAdLoaded = false
                 parent.loadErrorDescription = error.localizedDescription
             }
+            guard retryCount < maxRetryCount else { return }
+            retryCount += 1
+            let delaySeconds = UInt64(retryCount * 10)
+            retryTask?.cancel()
+            retryTask = Task { @MainActor [weak bannerView] in
+                try? await Task.sleep(nanoseconds: delaySeconds * 1_000_000_000)
+                guard !Task.isCancelled, let bannerView else { return }
+                AppLogger.ad.info("AdMob バナー広告を再読み込みします (リトライ \(self.retryCount)/\(self.maxRetryCount))")
+                bannerView.load(Request())
+            }
         }
     }
 }
@@ -236,19 +270,24 @@ struct AdBannerContainerView: View {
     @ObservedObject private var adService = AdMobService.shared
     @State private var isAdLoaded = false
     @State private var loadErrorDescription: String?
+    @State private var bannerHeight: CGFloat = 52
 
     var body: some View {
         GeometryReader { proxy in
+            let containerWidth = max(320, proxy.size.width)
+            let adaptiveHeight = max(52, ceil(largeAnchoredAdaptiveBanner(width: containerWidth).size.height))
+
             ZStack {
                 Color(.secondarySystemBackground)
 
                 if adService.isInitialized {
                     GADBannerRepresentableView(
                         adUnitID: adService.configuration.bannerUnitID,
-                        width: max(320, proxy.size.width),
+                        width: containerWidth,
                         isAdLoaded: $isAdLoaded,
                         loadErrorDescription: $loadErrorDescription
                     )
+                    .frame(width: containerWidth, height: adaptiveHeight)
                     .opacity(isAdLoaded ? 1.0 : 0.0)
                 }
 
@@ -263,8 +302,14 @@ struct AdBannerContainerView: View {
                     }
                 }
             }
+            .onAppear {
+                bannerHeight = adaptiveHeight
+            }
+            .onChange(of: adaptiveHeight) { _, newHeight in
+                bannerHeight = newHeight
+            }
         }
-        .frame(height: 52)
+        .frame(height: bannerHeight)
         .overlay(alignment: .top) {
             Divider()
         }
